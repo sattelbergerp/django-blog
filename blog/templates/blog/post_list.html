@@ -1,0 +1,18 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}
+    Posts
+{% endblock title %}
+
+{% block content %}
+    {% if post_list %}
+        {% for post in post_list %}
+            <p>{{post.title|truncatechars:50}}</p>
+            <p>{{post.content|truncatechars:100}}</p>
+        {% endfor %}
+    {% else %}
+        No posts found
+    {% endif %}
+{% endblock content %}
+    
+    
