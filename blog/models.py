@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save, post_init, pre_save
 from django.dispatch import receiver
-from django.template.defaultfilters import slugify
+from django.template.defaultfilters import slugify, truncatechars
 
 class Post(models.Model):
     title = models.CharField(max_length=255)
@@ -13,12 +13,19 @@ class Post(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return self.title
+
 class Comment(models.Model):
     commenter = models.ForeignKey(User, on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
     text = models.TextField(max_length=5000)
     votes = models.IntegerField(default=0)
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.commenter}: {truncatechars(self.text, 25)}'
 
 class Author(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=False)
@@ -35,11 +42,17 @@ class Author(models.Model):
     def save_user_author(sender, instance, created, **kwargs):
         instance.author.save()
 
+    def __str__(self):
+        return self.user.username
+
 class Tag(models.Model):
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(unique=True, null=True, blank=True)
     name = models.CharField(max_length=50, unique=True)
 
     @receiver(pre_save, sender='blog.Tag')
     def save_tag(sender, instance, **kwargs):
         instance.slug = slugify(instance.name)
+
+    def __str__(self):
+        return self.name
         
