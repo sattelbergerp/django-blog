@@ -64,3 +64,24 @@ class PostsIndexViewTest(TestCase):
         self.assertEquals(resp.status_code, 200)
         self.assertNotContains(resp, post.title)
         self.assertNotContains(resp, post.content)
+
+class PostsDetailViewTest(TestCase):
+
+    def setUp(self):
+        self.user = User(username='test_user', password='test_pass')
+        self.user.save()
+        self.user.author.bio='test_bio'
+
+    def test_post_index_returns_not_found(self):
+        resp = self.client.get(reverse('blog:post_detail', kwargs={'pk': 1}))
+        self.assertEquals(resp.status_code, 404)
+
+    def test_post_detail_responds_with_title_content_author_username_bio(self):
+        post = Post(title=''.join([f't{i}' for i in range(100)]), content=''.join([f't{i}' for i in range(500)]), author=self.user.author)
+        post.save()
+        resp = self.client.get(reverse('blog:post_detail', kwargs={'pk': 1}))
+        self.assertEquals(resp.status_code, 200)
+        self.assertContains(resp, post.title)
+        self.assertContains(resp, post.content)
+
+    
