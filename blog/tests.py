@@ -71,6 +71,7 @@ class PostsDetailViewTest(TestCase):
         self.user = User(username='test_user', password='test_pass')
         self.user.save()
         self.user.author.bio='test_bio'
+        self.user.author.save()
 
     def test_post_index_returns_not_found(self):
         resp = self.client.get(reverse('blog:post_detail', kwargs={'pk': 1}))
@@ -83,5 +84,7 @@ class PostsDetailViewTest(TestCase):
         self.assertEquals(resp.status_code, 200)
         self.assertContains(resp, post.title)
         self.assertContains(resp, post.content)
+        self.assertContains(resp, post.author.bio)
+        self.assertContains(resp, post.author.user.username)
 
     
