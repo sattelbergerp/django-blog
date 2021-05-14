@@ -7,8 +7,16 @@
 {% block content %}
     {% if post_list %}
         {% for post in post_list %}
-            <p>{{post.title|truncatechars:50}}</p>
-            <p>{{post.content|truncatechars:100}}</p>
+        <div class="card post-card">
+            <div {% if post.header_image %}style="background-image: url('{{ post.header_image.url }}');"{% endif %} class="card-img-top post-card-image"></div>
+            <div class="card-body">
+                <h5 class="card-title">
+                    <a href="{{post.get_absolute_url}}">{{post.title|truncatechars:50}}</a>
+                </h5>
+                <h6 class="card-subtitle mb-2 text-muted">By {{post.author.user.username}}</h6>
+                <p class="card-text">{{post.content|truncatechars:100}}</p>
+            </div>
+        </div>
         {% endfor %}
     {% else %}
         No posts found.

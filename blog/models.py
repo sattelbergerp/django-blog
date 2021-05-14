@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save, post_init, pre_save
 from django.dispatch import receiver
 from django.template.defaultfilters import slugify, truncatechars
+from django.urls import reverse
 
 class Post(models.Model):
     title = models.CharField(max_length=255)
@@ -12,6 +13,12 @@ class Post(models.Model):
     author = models.ForeignKey('Author', on_delete=models.CASCADE)
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)
+
+    def get_absolute_url(self):
+        return reverse('blog:post_detail', kwargs={'pk': self.pk})
+
+    def has_been_edited(self):
+        return (self.updated_on - self.created_on).total_seconds() > 60
 
     def __str__(self):
         return self.title
