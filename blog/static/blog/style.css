@@ -1,9 +1,22 @@
+.post-card-list {
+    align-content: initial;
+    vertical-align: initial;
+}
+
 .post-card {
     display: inline-block;
+    vertical-align: top;
     margin: 10px;
     width: 300px;
     height: 400px;
 }
+
+.post-card a{
+    white-space: nowrap;
+    width: 100%;
+    vertical-align: top;
+    overflow: hidden;
+}    
 
 .post-card-image {
     background-position: center;

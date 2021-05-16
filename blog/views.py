@@ -5,6 +5,7 @@ from .models import Post
 
 class PostsIndexView(ListView):
     model = Post
+    paginate_by = 20
 
 class PostsDetailView(DetailView):
     model = Post

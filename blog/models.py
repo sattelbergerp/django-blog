@@ -21,7 +21,7 @@ class Post(models.Model):
         return (self.updated_on - self.created_on).total_seconds() > 60
 
     def __str__(self):
-        return self.title
+        return truncatechars(self.title, 100)
 
 class Comment(models.Model):
     commenter = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -32,7 +32,7 @@ class Comment(models.Model):
     updated_on = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f'{self.commenter}: {truncatechars(self.text, 25)}'
+        return f'{self.commenter}: {truncatechars(self.text, 100)}'
 
 class Author(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=False)
