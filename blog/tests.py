@@ -51,7 +51,7 @@ class PostsIndexViewTest(TestCase):
         posts = [Post(title=f'test_title_{i}', content=f'test_content_{i}', author=self.user.author) for i in range(5)]
         for post in posts:
             post.save()
-        resp = self.client.get(reverse('blog:posts_index'))
+        resp = self.client.get(reverse('blog:post_index'))
         self.assertEquals(resp.status_code, 200)
         for post in posts:
             self.assertContains(resp, post.title)
@@ -60,7 +60,7 @@ class PostsIndexViewTest(TestCase):
     def test_post_index_truncates_long_title_and_text(self):
         post = Post(title=''.join([f't{i}' for i in range(100)]), content=''.join([f't{i}' for i in range(500)]), author=self.user.author)
         post.save()
-        resp = self.client.get(reverse('blog:posts_index'))
+        resp = self.client.get(reverse('blog:post_index'))
         self.assertEquals(resp.status_code, 200)
         self.assertNotContains(resp, post.title)
         self.assertNotContains(resp, post.content)
