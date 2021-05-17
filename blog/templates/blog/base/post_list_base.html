@@ -1,0 +1,26 @@
+<div class="post-card-list">
+    {% if post_list %}
+        {% for post in post_list %}
+        <div class="card post-card">
+            <div {% if post.header_image %}style="background-image: url('{{ post.header_image.url }}');"{% endif %} class="card-img-top post-card-image"></div>
+            <div>
+                <div class="card-body">
+                
+                <h5 class="card-title post-card-title">
+                    <a href="{{post.get_absolute_url}}">{{post.title|truncatechars:25}}</a>
+                </h5>
+                <span class="card-subtitle mb-2 text-muted">
+                    By <a href="{{post.author.get_absolute_url}}">{{post.author.user.username}}</a>
+                </span>
+                <div class="card-text">{{post.content|truncatechars:100}}</div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        
+        {% include 'blog/base/pagination_base.html' %}
+
+    {% else %}
+        No posts found.
+    {% endif %}
+ </div>

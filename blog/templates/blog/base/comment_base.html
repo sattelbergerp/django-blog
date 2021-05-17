@@ -1,9 +1,13 @@
 <li>
     <div class="comment border d-flex">
         <div class="comment-votes-container">
-            <i class="bi bi-arrow-up-square disabled"></i>
+            {% if request.user.is_authenticated %}
+            <i class="bi bi-arrow-up-square"></i>
+            {% endif %}
             {{comment.votes}}
+            {% if request.user.is_authenticated %}
             <i class="bi bi-arrow-down-square"></i>
+            {% endif %}
         </div>
         <div>
             <div class="comment-header">

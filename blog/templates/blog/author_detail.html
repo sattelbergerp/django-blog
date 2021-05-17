@@ -1,11 +1,15 @@
+
 {% extends 'blog/base/page_base.html' %}
 
 {% block title %}
-    Posts
+    {{author.user.username}}
 {% endblock title %}
 
 {% block content %}
+    <div class="">
+        <h4>{{author.user.username}}</h4>
+        
+        {{author.bio}}
+    </div>
     {% include 'blog/base/post_list_base.html' %}
 {% endblock content %}
-    
-    

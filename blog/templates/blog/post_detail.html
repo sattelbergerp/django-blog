@@ -10,7 +10,9 @@
             <h3>{{post.title}}</h3>
             <div>{{post.content}}</div>
             <div class="border post-author-blurb">
-                <h5>{{post.author.user.username}}</h5>
+                <a href="{{post.author.get_absolute_url}}">
+                    <h5>{{post.author.user.username}}</h5>
+                </a>
                 {{post.author.bio}}
             </div>
             <div class="text-muted fst-italic">

@@ -43,6 +43,9 @@ class Author(models.Model):
     bio = models.TextField(max_length=500, null=True, blank=True)
     visible = models.BooleanField(default=False)
 
+    def get_absolute_url(self):
+        return reverse('blog:author_detail', kwargs={'slug': self.slug})
+
     @receiver(post_save, sender=User)
     def create_user_author(sender, instance, created, **kwargs):
         if created:
