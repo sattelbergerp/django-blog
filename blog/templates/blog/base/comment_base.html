@@ -1,0 +1,17 @@
+<li>
+    <div class="comment border d-flex">
+        <div class="comment-votes-container">
+            <i class="bi bi-arrow-up-square disabled"></i>
+            {{comment.votes}}
+            <i class="bi bi-arrow-down-square"></i>
+        </div>
+        <div>
+            <div class="comment-header">
+                By {{comment.commenter.username}} on {{comment.created_on}}
+            </div>
+            <div class="comment-text">
+                {{comment.text}}
+            </div>
+        </div>
+    </div>
+</li>

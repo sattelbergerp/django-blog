@@ -1,4 +1,4 @@
-{% extends 'blog/base.html' %}
+{% extends 'blog/base/page_base.html' %}
 
 {% block title %}
     Posts
@@ -23,7 +23,7 @@
         </div>
         {% endfor %}
         
-        {% include 'blog/pagination.html' %}
+        {% include 'blog/base/pagination_base.html' %}
 
     {% else %}
         No posts found.
