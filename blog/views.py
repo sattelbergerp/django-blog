@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404, render
 from django.views.generic import ListView, DetailView
 from django.views import View
-from .models import Post, Author
+from .models import Post, Author, Comment
 # Create your views here.
 
 class PostIndexView(ListView):
@@ -12,7 +12,16 @@ class PostDetailView(View):
     def get(self, request, pk):
         post = get_object_or_404(Post, pk=pk)
         comments = post.comment_set.order_by('-votes')[:5]
-        return render(request, 'blog/post_detail.html', {'post': post, 'comments': comments})
+        return render(request, 'blog/post_detail.html', {'post': post, 'comments': comments, 'comment_count': post.comment_set.count()})
+
+class PostCommentIndexView(ListView):
+    paginate_by = 20
+    template_name = 'blog/post_comment_index.html'
+    context_object_name = 'comments'
+
+    def get_queryset(self):
+        self.post = get_object_or_404(Post, pk=self.kwargs['pk'])
+        return self.post.comment_set.order_by('-votes').all()
 
 class AuthorDetailView(ListView):
     paginate_by = 20
@@ -26,3 +35,4 @@ class AuthorDetailView(ListView):
         context = super().get_context_data(**kwargs)
         context['author'] = self.author
         return context
+

@@ -15,7 +15,7 @@ MEDIA_TARGET = 'media'
 POSTS_IMAGE_TARGET = 'blog_post_header_images'
 
 users = []
-for i in range(25):
+for i in range(175):
     username=f'test_user_{i}'
     try:
         user = User.objects.get(username=username)
@@ -23,8 +23,21 @@ for i in range(25):
         user = User(username=username, password= f'test_pass_{i}')
     finally:
         user.save()
+        users.append(user)
+
+authors = []
+for i in range(25):
+    username=f'test_author_{i}'
+    try:
+        user = User.objects.get(username=username)
+    except User.DoesNotExist:
+        user = User(username=username, password= f'test_author_pass_{i}')
+    finally:
+        user.save()
         user.author.bio = lorem.paragraph()
+        user.author.visible = True
         user.author.save()
+        authors.append(user)
         users.append(user)
 
 tags = []
@@ -38,11 +51,15 @@ for i in range(25):
         tag.save()
         tags.append(tag)
 
-for file in os.listdir(os.path.join(MEDIA_TARGET, POSTS_IMAGE_TARGET)):
+files = os.listdir(os.path.join(MEDIA_TARGET, POSTS_IMAGE_TARGET))
+print('Generating posts...',end='')
+
+for i, file in enumerate(files):
+    print(f'\rGenerating posts... ({i+1}/{len(files)})',end='')
     file_path = os.path.join(POSTS_IMAGE_TARGET, file)
     post_set = Post.objects.filter(header_image=file_path)
     if post_set.count() < 1:
-        post = Post(title=lorem.sentence(), content=lorem.paragraphs(5), header_image=file_path, author=users[randrange(0, len(users)-1)].author)
+        post = Post(title=lorem.sentence(), content=lorem.paragraphs(5), header_image=file_path, author=authors[randrange(0, len(authors)-1)].author)
         post.save()
     else:
         post = post_set[0]
@@ -58,8 +75,8 @@ for file in os.listdir(os.path.join(MEDIA_TARGET, POSTS_IMAGE_TARGET)):
                 post.tags.add(tag)
     
     if post.comment_set.all().count() == 0:
-        for i in range(randrange(5, 500)):
-            comment = Comment(post=post, commenter=users[randrange(0, len(users)-1)], text=lorem.paragraph(), votes=randrange(0, 5000))
+        for i in range(randrange(5, 20)):
+            comment = Comment(post=post, commenter=users[randrange(0, len(users)-1)], text=lorem.paragraph(), votes=randrange(-1000000, 100000000))
             comment.save()
 
 

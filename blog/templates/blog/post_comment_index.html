@@ -1,0 +1,18 @@
+{% extends 'blog/base/page_base.html' %}
+
+{% block title %}
+    Posts Comments
+{% endblock title %}
+
+{% block content %}
+    <ul class='comments-list'>
+        {% if comments %}
+            {% for comment in comments %}
+                {% include 'blog/base/comment_base.html'%}
+            {% endfor %}
+        {% endif %} 
+    </ul>
+    {% include 'blog/base/pagination_base.html' %}
+{% endblock content %}
+    
+    
