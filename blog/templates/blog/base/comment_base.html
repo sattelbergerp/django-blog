@@ -1,10 +1,12 @@
+{% load blog_filters %}
+
 <li>
     <div class="comment border d-flex">
         <div class="comment-votes-container">
             {% if request.user.is_authenticated %}
             <i class="bi bi-arrow-up-square"></i>
             {% endif %}
-            {{comment.votes}}
+            {{comment.votes|intcompact}}
             {% if request.user.is_authenticated %}
             <i class="bi bi-arrow-down-square"></i>
             {% endif %}

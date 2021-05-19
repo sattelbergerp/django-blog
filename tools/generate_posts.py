@@ -75,8 +75,8 @@ for i, file in enumerate(files):
                 post.tags.add(tag)
     
     if post.comment_set.all().count() == 0:
-        for i in range(randrange(5, 20)):
-            comment = Comment(post=post, commenter=users[randrange(0, len(users)-1)], text=lorem.paragraph(), votes=randrange(-1000000, 100000000))
+        for i in range(randrange(10, 50)):
+            comment = Comment(post=post, commenter=users[randrange(0, len(users)-1)], text=lorem.paragraph(), votes=randrange(-10000, 10000))
             comment.save()
 
 
