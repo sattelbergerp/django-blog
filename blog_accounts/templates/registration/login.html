@@ -1,0 +1,42 @@
+{% extends 'blog/base/page_base.html' %}
+
+{% block content %}
+<div class="form-window">
+    <form method="post" action="{% url 'login' %}">
+        {% csrf_token %}
+        {% for error in form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">{{error}}</div>
+        {% endfor %}
+        <div class="mb-3">
+            <label id="username" class="form-label" for="{{form.username.name}}">Username: </label>
+            <input type="text" class="form-control{%if form.username.errors%} is-invalid{%endif%}" name="{{form.username.name}}" value="{% if form.username.value %}{{ form.username.value }}{% endif %}">
+            <div class="invalid-feedback">
+                {% for error in form.username.errors %}
+                    <div>{{error}}</div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="mb-3">
+            <label id="password" class="form-label" for="{{form.password.name}}">Password: </label>
+            <input type="password" class="form-control{%if form.password.errors%} is-invalid{%endif%}" name="{{form.password.name}}">
+            <div class="invalid-feedback">
+                {% for error in form.password.errors %}
+                    <div>{{error}}</div>
+                {% endfor %}
+            </div>
+        </div>
+        <div>
+            <a href="#">Forgot your password</a>
+        </div>
+        <div>
+            <a href="#">Create a new account</a>
+        </div>
+        <input type="hidden" name="next" value="{{ next }}" />
+        <div>
+            <button type="submit" class="btn btn-primary float-end">Login</button>
+        </div>
+        
+    </form>
+</div>
+{% endblock content %}
+    

@@ -25,6 +25,29 @@
                         <li class="nav-item">
                             <a class="nav-link{% if request.path == post_index %} active{% endif %}" href="{{post_index}}">Posts</a>
                         </li>
+                        
+                    </ul>
+                    <ul class="navbar-nav mb-2 mb-lg-0">
+                        <li class="nav-item dropdown ms-auto">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                {% if user.is_authenticated %}
+                                    {{user.username}}
+                                {% else %}
+                                    Login / Signup
+                                {% endif %}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                {% if user.is_authenticated %}
+                                    <li><a class="dropdown-item" href="#">My blog</a></li>
+                                    <li><a class="dropdown-item" href="#">Blog settings</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
+                                {% else %}
+                                    <li><a class="dropdown-item" href="{% url 'login' %}">Login</a></li>
+                                    <li><a class="dropdown-item" href="#">Signup</a></li>
+                                {% endif %}
+                            </ul>
+                          </li>
                     </ul>
                 </div>
             </div>
