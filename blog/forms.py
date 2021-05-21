@@ -51,7 +51,9 @@ class UserSettingsForm(BaseUserForm):
                 self.add_error('current_password', 'Password is incorrect')
 
 class AuthorSettingsForm(forms.ModelForm):
-    
+    author_enabled = forms.BooleanField()
+    moderator = forms.BooleanField()
+
     class Meta:
         model = Author
-        fields = ['bio', 'visible']
+        fields = ['bio']

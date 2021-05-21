@@ -6,6 +6,7 @@ from .models import Post, Author, Comment
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth import login
+from django.contrib.auth.models import Permission
 # Create your views here.
 
 class PostIndexView(ListView):
@@ -43,8 +44,10 @@ class AuthorDetailView(ListView):
 @login_required
 def user_edit(request, slug):
     author = get_object_or_404(Author, slug=slug)
+    can_edit_user = request.user == author.user
+    can_edit_author = request.user.has_perm('blog.change_author') or (request.user == author.user and request.user.has_perm('blog.modify_own_author'))
     saved = False
-    if author.user != request.user:
+    if not can_edit_user and not can_edit_author:
         raise PermissionDenied
     if request.method == 'POST':
         user_form = UserSettingsForm(request.POST, user=author.user)
@@ -53,17 +56,40 @@ def user_edit(request, slug):
             saved = True
             password = user_form.cleaned_data.get('password')
             email = user_form.cleaned_data.get('email')
-            author.user.email = email
-            if password:
-                author.user.set_password(password)
-            author.user.save()
-            if request.user.has_perm('modify_own_author'):
+            if can_edit_user:
+                author.user.email = email
+                if password:
+                    author.user.set_password(password)
+            if can_edit_author:
                 author.bio = author_form.cleaned_data.get('bio')
-                author.visible = author_form.cleaned_data.get('visible')
+                author.visible = author_form.cleaned_data.get('author_enabled')
+
+                if author_form.cleaned_data.get('author_enabled'):
+                    author.user.user_permissions.add(Permission.objects.get(codename='modify_own_author'), Permission.objects.get(codename='create_own_post'))
+                else:
+                    author.user.user_permissions.remove(Permission.objects.get(codename='modify_own_author'), Permission.objects.get(codename='create_own_post'))
+                
+                if author_form.cleaned_data.get('moderator'):
+                    author.user.user_permissions.add(Permission.objects.get(codename='change_author'))
+                else:
+                    author.user.user_permissions.remove(Permission.objects.get(codename='change_author'))
                 author.save()
-            login(request, author.user) #Changing a users password logs them out
+            author.user.save()
+            
+            if request.user == author.user:
+                login(request, author.user) #Changing a users password logs them out
             
     else:
-       user_form = UserSettingsForm(user=author.user, initial= {'email': author.user.email})
-       author_form = AuthorSettingsForm(instance=author)
-    return render(request, 'blog/user_edit.html', {'user_form': user_form, 'author_form': author_form, 'author': author, 'saved': saved})
+       user_form = UserSettingsForm(user=author.user, initial={'email': author.user.email})
+       author_form = AuthorSettingsForm(instance=author, initial={'author_enabled': author.visible, 'moderator': author.user.has_perm('blog.edit_author')})
+
+    context = {
+        'user_form': user_form, 
+        'author_form': author_form, 
+        'author': author, 
+        'saved': saved,
+        'can_edit_author': can_edit_author,
+        'can_edit_user': can_edit_user,
+    }
+
+    return render(request, 'blog/user_edit.html', context)

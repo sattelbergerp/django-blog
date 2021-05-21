@@ -16,24 +16,35 @@
         {% for error in user_form.non_field_errors %}
             <div class="alert alert-danger" role="alert">{{error}}</div>
         {% endfor %}
-        {% if perms.blog.modify_own_author %}
+        {% if can_edit_author %}
         <h3>Blog Settings</h3>
         <div class="mb-3">
             <label id="bio" class="form-label" for="{{author_form.bio.name}}">Bio</label>
-            <textarea class="form-control{%if author_form.bio.errors%} is-invalid{%endif%}" aria-label="With textarea" name="{{author_form.bio.name}}">{% if author_form.bio.value %}{{ author_form.bio.value }}{% endif %}</textarea>
+            <textarea rows="10" class="form-control{%if author_form.bio.errors%} is-invalid{%endif%}" aria-label="With textarea" name="{{author_form.bio.name}}">{% if author_form.bio.value %}{{ author_form.bio.value }}{% endif %}</textarea>
             <div class="invalid-feedback">
                 {% for error in author_form.bio.errors %}
                     <div>{{error}}</div>
                 {% endfor %}
             </div>
         </div>
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" {% if author_form.visible.value %}checked{% endif %} id="visible" name="{{author_form.visible.name}}">
-            <label class="form-check-label" for="{{author_form.visible.name}}">
-              Make my blog visible
-            </label>
-          </div>
+        {% if perms.edit_author and user != author.user %}
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" {% if author_form.author_enabled.value %}checked{% endif %} id="author-enabled" name="{{author_form.author_enabled.name}}">
+                <label class="form-check-label" for="{{author_form.author_enabled.name}}">
+                    Make this user a blog author
+                </label>
+            </div>
+        {%endif%}
+        {% if user.is_staff and user != author.user %}
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" {% if author_form.moderator.value %}checked{% endif %} id="moderator" name="{{author_form.moderator.name}}">
+                <label class="form-check-label" for="{{author_form.moderator.name}}">
+                    Allow this user change other users author status
+                </label>
+            </div>
+        {%endif%}
         {% endif %}
+        {% if can_edit_user %}
         <h3>Security Settings</h3>
         <div class="mb-3">
             <label id="current-password" class="form-label" for="{{user_form.current_password.name}}">Current Password</label>
@@ -72,10 +83,11 @@
                 {% endfor %}
             </div>
         </div>
+        
+        {% endif %}
         <div>
             <button type="submit" class="btn btn-primary float-end">Apply</button>
         </div>
-        
     </form>
 </div>
 {% endblock content %}

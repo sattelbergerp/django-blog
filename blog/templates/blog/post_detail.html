@@ -8,9 +8,11 @@
     <div class="post-container">
         <div class="post-content">
             <h3>{{post.title}}</h3>
-            <div>
-                <img class="post-header-image" src={{post.header_image.url}}></img>
-            </div>
+            {% if post.header_image %}
+                <div>
+                    <img class="post-header-image" src={{post.header_image.url}}></img>
+                </div>
+            {% endif %}
             <div>{{post.content}}</div>
             <div class="border post-author-blurb">
                 <a href="{{post.author.get_absolute_url}}">
