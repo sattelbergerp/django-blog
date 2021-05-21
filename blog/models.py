@@ -6,6 +6,7 @@ from django.template.defaultfilters import slugify, truncatechars
 from django.urls import reverse
 
 class Post(models.Model):
+    
     title = models.CharField(max_length=255)
     header_image = models.ImageField(null=True, blank=True, upload_to='blog_post_header_images/')
     content = models.TextField(max_length=50000)
@@ -16,6 +17,9 @@ class Post(models.Model):
 
     class Meta:
         ordering = ['-created_on']
+        permissions = [
+            ("create_own_post", "Can create a new post with themselves as the author"),
+        ]
 
     def get_absolute_url(self):
         return reverse('blog:post_detail', kwargs={'pk': self.pk})
@@ -42,6 +46,11 @@ class Author(models.Model):
     slug = models.SlugField(unique=True)
     bio = models.TextField(max_length=500, null=True, blank=True)
     visible = models.BooleanField(default=False)
+
+    class Meta:
+        permissions = [
+            ("modify_own_author", "Can change their own author settings and visibilty status"),
+        ]
 
     def get_absolute_url(self):
         return reverse('blog:author_detail', kwargs={'slug': self.slug})

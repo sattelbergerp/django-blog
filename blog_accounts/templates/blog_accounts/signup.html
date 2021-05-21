@@ -1,12 +1,12 @@
 {% extends 'blog/base/page_base.html' %}
 
 {% block title %}
-    Login
+    Signup
 {% endblock title %}
-
+    
 {% block content %}
 <div class="form-window">
-    <form method="post" action="{% url 'login' %}">
+    <form method="post" action="{% url 'signup' %}">
         {% csrf_token %}
         {% for error in form.non_field_errors %}
             <div class="alert alert-danger" role="alert">{{error}}</div>
@@ -21,6 +21,17 @@
             </div>
         </div>
         <div class="mb-3">
+            <label id="email" class="form-label" for="{{form.email.name}}">Email</label>
+            <span class="text-muted float-end">(Optional)</span>
+            <input type="email" class="form-control{%if form.email.errors%} is-invalid{%endif%}" name="{{form.email.name}}" value="{% if form.email.value %}{{ form.email.value }}{% endif %}">
+            <div class="form-text">Without an email you will be unable to recover your password.</div>
+            <div class="invalid-feedback">
+                {% for error in form.email.errors %}
+                    <div>{{error}}</div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="mb-3">
             <label id="password" class="form-label" for="{{form.password.name}}">Password</label>
             <input type="password" class="form-control{%if form.password.errors%} is-invalid{%endif%}" name="{{form.password.name}}">
             <div class="invalid-feedback">
@@ -29,15 +40,20 @@
                 {% endfor %}
             </div>
         </div>
-        <div>
-            <a href="#">Forgot your password</a>
+        <div class="mb-3">
+            <label id="confirm_password" class="form-label" for="{{form.confirm_password.name}}">Confirm Password</label>
+            <input type="password" class="form-control{%if form.confirm_password.errors%} is-invalid{%endif%}" name="{{form.confirm_password.name}}">
+            <div class="invalid-feedback">
+                {% for error in form.confirm_password.errors %}
+                    <div>{{error}}</div>
+                {% endfor %}
+            </div>
         </div>
         <div>
-            <a href="{% url 'signup' %}">Create a new account</a>
+            <a href="{% url 'login' %}">Login to an existing account</a>
         </div>
-        <input type="hidden" name="next" value="{{ next }}" />
         <div>
-            <button type="submit" class="btn btn-primary float-end">Login</button>
+            <button type="submit" class="btn btn-primary float-end">Create Account</button>
         </div>
         
     </form>

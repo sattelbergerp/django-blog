@@ -1,0 +1,220 @@
+diff --git a/blog/models.py b/blog/models.py
+index b09d7bb..90aa668 100644
+--- a/blog/models.py
++++ b/blog/models.py
+@@ -6,6 +6,7 @@ from django.template.defaultfilters import slugify, truncatechars
+ from django.urls import reverse
+ 
+ class Post(models.Model):
++    
+     title = models.CharField(max_length=255)
+     header_image = models.ImageField(null=True, blank=True, upload_to='blog_post_header_images/')
+     content = models.TextField(max_length=50000)
+@@ -16,6 +17,9 @@ class Post(models.Model):
+ 
+     class Meta:
+         ordering = ['-created_on']
++        permissions = [
++            ("create_own_post", "Can create a new post with themselves as the author"),
++        ]
+ 
+     def get_absolute_url(self):
+         return reverse('blog:post_detail', kwargs={'pk': self.pk})
+@@ -43,6 +47,11 @@ class Author(models.Model):
+     bio = models.TextField(max_length=500, null=True, blank=True)
+     visible = models.BooleanField(default=False)
+ 
++    class Meta:
++        permissions = [
++            ("modify_own_author", "Can change their own author settings and visibilty status"),
++        ]
++
+     def get_absolute_url(self):
+         return reverse('blog:author_detail', kwargs={'slug': self.slug})
+ 
+diff --git a/blog/templates/blog/base/page_base.html b/blog/templates/blog/base/page_base.html
+index 353b7b1..e4ea92f 100644
+--- a/blog/templates/blog/base/page_base.html
++++ b/blog/templates/blog/base/page_base.html
+@@ -38,13 +38,18 @@
+                             </a>
+                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                 {% if user.is_authenticated %}
+-                                    <li><a class="dropdown-item" href="#">My blog</a></li>
+-                                    <li><a class="dropdown-item" href="#">Blog settings</a></li>
++                                    {% if perms.blog.create_own_post %}
++                                        <li><a class="dropdown-item" href="#">New post</a></li>
++                                    {% endif %}
++                                    {% if user.author.visible %}
++                                        <li><a class="dropdown-item" href="#">My blog</a></li>
++                                    {% endif %}
++                                    <li><a class="dropdown-item" href="{% url 'blog:user_edit' slug=user.author.slug %}">Settings</a></li>
+                                     <li><hr class="dropdown-divider"></li>
+                                     <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
+                                 {% else %}
+                                     <li><a class="dropdown-item" href="{% url 'login' %}">Login</a></li>
+-                                    <li><a class="dropdown-item" href="#">Signup</a></li>
++                                    <li><a class="dropdown-item" href="{% url 'signup' %}">Signup</a></li>
+                                 {% endif %}
+                             </ul>
+                           </li>
+diff --git a/blog/urls.py b/blog/urls.py
+index 9ed66a9..60910de 100644
+--- a/blog/urls.py
++++ b/blog/urls.py
+@@ -8,4 +8,5 @@ urlpatterns = [
+     path('posts/<int:pk>/', views.PostDetailView.as_view(), name='post_detail'),
+     path('posts/<int:pk>/comments', views.PostCommentIndexView.as_view(), name='post_comment_index'),
+     path('author/<slug:slug>/', views.AuthorDetailView.as_view(), name='author_detail'),
++    path('user/<slug:slug>/edit', views.user_edit, name='user_edit'),
+ ]
+diff --git a/blog/views.py b/blog/views.py
+index 4731545..b4b64ff 100644
+--- a/blog/views.py
++++ b/blog/views.py
+@@ -1,7 +1,11 @@
++from blog.forms import AuthorSettingsForm, UserSettingsForm
+ from django.shortcuts import get_object_or_404, render
+ from django.views.generic import ListView, DetailView
+ from django.views import View
+ from .models import Post, Author, Comment
++from django.contrib.auth.decorators import login_required
++from django.core.exceptions import PermissionDenied
++from django.contrib.auth import login
+ # Create your views here.
+ 
+ class PostIndexView(ListView):
+@@ -28,7 +32,7 @@ class AuthorDetailView(ListView):
+     template_name = 'blog/author_detail.html'
+ 
+     def get_queryset(self):
+-        self.author = get_object_or_404(Author, slug=self.kwargs['slug'])
++        self.author = get_object_or_404(Author.objects.filter(visible=True), slug=self.kwargs['slug'])
+         return self.author.post_set.all()
+ 
+     def get_context_data(self, **kwargs):
+@@ -36,3 +40,30 @@ class AuthorDetailView(ListView):
+         context['author'] = self.author
+         return context
+ 
++@login_required
++def user_edit(request, slug):
++    author = get_object_or_404(Author, slug=slug)
++    saved = False
++    if author.user != request.user:
++        raise PermissionDenied
++    if request.method == 'POST':
++        user_form = UserSettingsForm(request.POST, user=author.user)
++        author_form = AuthorSettingsForm(request.POST)
++        if user_form.is_valid() and author_form.is_valid():
++            saved = True
++            password = user_form.cleaned_data.get('password')
++            email = user_form.cleaned_data.get('email')
++            author.user.email = email
++            if password:
++                author.user.set_password(password)
++            author.user.save()
++            if request.user.has_perm('modify_own_author'):
++                author.bio = author_form.cleaned_data.get('bio')
++                author.visible = author_form.cleaned_data.get('visible')
++                author.save()
++            login(request, author.user) #Changing a users password logs them out
++            
++    else:
++       user_form = UserSettingsForm(user=author.user, initial= {'email': author.user.email})
++       author_form = AuthorSettingsForm(instance=author)
++    return render(request, 'blog/user_edit.html', {'user_form': user_form, 'author_form': author_form, 'author': author, 'saved': saved})
+diff --git a/blog_accounts/templates/registration/login.html b/blog_accounts/templates/registration/login.html
+index 9c6bc6c..ad123ad 100644
+--- a/blog_accounts/templates/registration/login.html
++++ b/blog_accounts/templates/registration/login.html
+@@ -1,5 +1,9 @@
+ {% extends 'blog/base/page_base.html' %}
+ 
++{% block title %}
++    Login
++{% endblock title %}
++
+ {% block content %}
+ <div class="form-window">
+     <form method="post" action="{% url 'login' %}">
+@@ -8,7 +12,7 @@
+             <div class="alert alert-danger" role="alert">{{error}}</div>
+         {% endfor %}
+         <div class="mb-3">
+-            <label id="username" class="form-label" for="{{form.username.name}}">Username: </label>
++            <label id="username" class="form-label" for="{{form.username.name}}">Username</label>
+             <input type="text" class="form-control{%if form.username.errors%} is-invalid{%endif%}" name="{{form.username.name}}" value="{% if form.username.value %}{{ form.username.value }}{% endif %}">
+             <div class="invalid-feedback">
+                 {% for error in form.username.errors %}
+@@ -17,7 +21,7 @@
+             </div>
+         </div>
+         <div class="mb-3">
+-            <label id="password" class="form-label" for="{{form.password.name}}">Password: </label>
++            <label id="password" class="form-label" for="{{form.password.name}}">Password</label>
+             <input type="password" class="form-control{%if form.password.errors%} is-invalid{%endif%}" name="{{form.password.name}}">
+             <div class="invalid-feedback">
+                 {% for error in form.password.errors %}
+@@ -29,7 +33,7 @@
+             <a href="#">Forgot your password</a>
+         </div>
+         <div>
+-            <a href="#">Create a new account</a>
++            <a href="{% url 'signup' %}">Create a new account</a>
+         </div>
+         <input type="hidden" name="next" value="{{ next }}" />
+         <div>
+diff --git a/blog_accounts/views.py b/blog_accounts/views.py
+index 91ea44a..c163e19 100644
+--- a/blog_accounts/views.py
++++ b/blog_accounts/views.py
+@@ -1,3 +1,23 @@
++from django.http.response import HttpResponseRedirect
+ from django.shortcuts import render
++from django.views.generic import CreateView
++from django.contrib.auth.models import User
++from django.contrib.auth import login
++from .forms import SignupForm
+ 
+ # Create your views here.
++
++def signup(request):
++    if request.method == 'POST':
++        form = SignupForm(request.POST)
++        if form.is_valid():
++            user = User.objects.create_user(form.cleaned_data['username'], form.cleaned_data['email'], form.cleaned_data['password'])
++            user.save()
++            login(request, user)
++            return HttpResponseRedirect('/')
++    else:
++       form = SignupForm()
++    return render(request, 'blog_accounts/signup.html', {'form': form})
++
++    
++
+diff --git a/blog_project/settings.py b/blog_project/settings.py
+index dacaf3f..a619174 100644
+--- a/blog_project/settings.py
++++ b/blog_project/settings.py
+@@ -28,6 +28,7 @@ DEBUG = 'DJANGO_DEBUG' in environ and environ['DJANGO_DEBUG'] == 'True'
+ 
+ LOGIN_REDIRECT_URL = '/'
+ LOGOUT_REDIRECT_URL = '/'
++ENFORCE_PASSWORD_VALIDATION = False
+ 
+ ALLOWED_HOSTS = []
+ 
+diff --git a/blog_project/urls.py b/blog_project/urls.py
+index 328aa3b..2b4273b 100644
+--- a/blog_project/urls.py
++++ b/blog_project/urls.py
+@@ -22,7 +22,7 @@ from django.conf import settings
+ urlpatterns = [
+     path('admin/', admin.site.urls),
+     path('blog/', include('blog.urls')),
+-    path('accounts/', include('django.contrib.auth.urls')),
++    path('accounts/', include('blog_accounts.urls')),
+     path('', RedirectView.as_view(url='/blog/posts')),
+ ]
+ 

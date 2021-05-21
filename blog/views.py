@@ -1,7 +1,11 @@
+from blog.forms import AuthorSettingsForm, UserSettingsForm
 from django.shortcuts import get_object_or_404, render
 from django.views.generic import ListView, DetailView
 from django.views import View
 from .models import Post, Author, Comment
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from django.contrib.auth import login
 # Create your views here.
 
 class PostIndexView(ListView):
@@ -28,7 +32,7 @@ class AuthorDetailView(ListView):
     template_name = 'blog/author_detail.html'
 
     def get_queryset(self):
-        self.author = get_object_or_404(Author, slug=self.kwargs['slug'])
+        self.author = get_object_or_404(Author.objects.filter(visible=True), slug=self.kwargs['slug'])
         return self.author.post_set.all()
 
     def get_context_data(self, **kwargs):
@@ -36,3 +40,30 @@ class AuthorDetailView(ListView):
         context['author'] = self.author
         return context
 
+@login_required
+def user_edit(request, slug):
+    author = get_object_or_404(Author, slug=slug)
+    saved = False
+    if author.user != request.user:
+        raise PermissionDenied
+    if request.method == 'POST':
+        user_form = UserSettingsForm(request.POST, user=author.user)
+        author_form = AuthorSettingsForm(request.POST)
+        if user_form.is_valid() and author_form.is_valid():
+            saved = True
+            password = user_form.cleaned_data.get('password')
+            email = user_form.cleaned_data.get('email')
+            author.user.email = email
+            if password:
+                author.user.set_password(password)
+            author.user.save()
+            if request.user.has_perm('modify_own_author'):
+                author.bio = author_form.cleaned_data.get('bio')
+                author.visible = author_form.cleaned_data.get('visible')
+                author.save()
+            login(request, author.user) #Changing a users password logs them out
+            
+    else:
+       user_form = UserSettingsForm(user=author.user, initial= {'email': author.user.email})
+       author_form = AuthorSettingsForm(instance=author)
+    return render(request, 'blog/user_edit.html', {'user_form': user_form, 'author_form': author_form, 'author': author, 'saved': saved})
