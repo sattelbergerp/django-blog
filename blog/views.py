@@ -12,10 +12,11 @@ from django.contrib.auth.models import Permission
 class PostIndexView(ListView):
     model = Post
     paginate_by = 20
+    queryset = Post.objects.filter(author__visible=True)
 
 class PostDetailView(View):
     def get(self, request, pk):
-        post = get_object_or_404(Post, pk=pk)
+        post = get_object_or_404(Post, pk=pk, author__visible=True)
         comments = post.comment_set.order_by('-votes')[:5]
         return render(request, 'blog/post_detail.html', {'post': post, 'comments': comments, 'comment_count': post.comment_set.count()})
 
@@ -25,7 +26,11 @@ class PostCommentIndexView(ListView):
     context_object_name = 'comments'
 
     def get_queryset(self):
-        self.post = get_object_or_404(Post, pk=self.kwargs['pk'])
+        self.post = get_object_or_404(Post, pk=self.kwargs['pk'], author__visible=True)
+        if 'sort' in self.request.GET:
+            sort = self.request.GET['sort']
+            if sort == 'recent':
+                return self.post.comment_set.order_by('-created_on').all()
         return self.post.comment_set.order_by('-votes').all()
 
 class AuthorDetailView(ListView):
