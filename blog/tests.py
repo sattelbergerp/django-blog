@@ -1,32 +1,44 @@
 from datetime import timedelta
 from django.test import TestCase
 from django.urls import reverse
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Permission, User
 from .models import Author, Tag, Post, Comment
 from django.db.utils import IntegrityError
 from django.utils import timezone
+
+#util functions
+def create_user(username, password, author_visible=False, author_bio=None, perms = [], staff=False, superuser=False):
+    user = User(username=username, password=password)
+    user.save()
+    user.author.visible = author_visible
+    if author_bio:
+        user.author.bio = author_bio
+    user.author.save()
+    for perm in perms:
+        user.user_permissions.add(Permission.objects.get(codename=perm))
+    user.is_superuser = superuser
+    user.is_staff = staff
+    user.save()
+    pk = user.pk
+    return User.objects.get(pk=pk)
 
 #Model tests
 class AuthorModelTest(TestCase):
 
     def test_author_created_when_user_created(self):
-       user = User(username="test_user", password="test_pass")
-       user.save()
+       user = create_user("test_user", "test_pass")
        self.assertTrue(user.author)
 
     def test_author_created_hidden(self):
-       user = User(username="test_user", password="test_pass")
-       user.save()
+       user = create_user("test_user", "test_pass")
        self.assertFalse(user.author.visible)
 
     def test_author_generates_correct_slug(self):
-       user = User(username="test#_$user%$^&", password="test_pass")
-       user.save()
+       user = create_user("test#_$user%$^&", "test_pass")
        self.assertEqual(user.author.slug, 'test_user')
 
     def test_deleting_user_deletes_author(self):
-       user = User(username="test#_$user%$^&", password="test_pass")
-       user.save()
+       user = create_user("test#_$user%$^&", "test_pass")
        self.assertEqual(Author.objects.count(), 1)
        user.delete()
        self.assertEqual(Author.objects.count(), 0)
@@ -45,8 +57,7 @@ class TagModelTest(TestCase):
 class PostModelTest(TestCase):
 
     def setUp(self):
-        self.user = User(username='test_user', password='test_pass')
-        self.user.save()
+        self.user = create_user('test_user', 'test_pass')
 
     def test_has_been_edited_returns_false_for_new_posts(self):
         post = Post(author=self.user.author, title='test', content='test', updated_on=timezone.now() + timedelta(seconds=59))
@@ -63,10 +74,7 @@ class PostModelTest(TestCase):
 class PostsIndexViewTest(TestCase):
 
     def setUp(self):
-        self.user = User(username='test_user', password='test_pass')
-        self.user.save()
-        self.user.author.visible = True
-        self.user.author.save()
+        self.user = create_user('test_user', 'test_pass', author_visible=True)
 
     def test_post_index_responds_with_posts_ordered_by_creation_date(self):
         day_deltas = [10, -2, 5, 100, 1]
@@ -104,10 +112,7 @@ class PostsIndexViewTest(TestCase):
     def test_post_index_hides_posts_from_authors_that_are_not_visible(self):
         posts = []
         for i in range(10):
-          user = User(username=f'test_{i}', password=f'test_{i}')
-          user.save()
-          user.author.visible = (i % 2) == 0
-          user.author.save()
+          user = create_user(f'test_{i}', f'test_{i}', author_visible=(i % 2) == 0)
           post = Post(title=f'test_title_{i}', content=f'test_content_{i}', author=user.author)
           post.save()
           posts.append(post)
@@ -134,11 +139,7 @@ class AuthorDetailViewTest(TestCase):
     def setUp(self):
         self.users = []
         for i in range(4):
-            user = User(username=f'test_user_{i}', password=f'test_pass_{i}')
-            user.save()
-            user.author.visible = True
-            user.author.bio = f'test_bio_{i}'
-            user.author.save()
+            user = create_user(f'test_user_{i}', f'test_pass_{i}', author_visible=True, author_bio=f'test_bio_{i}')
             self.users.append(user)
 
     def test_author_detail_returns_not_found(self):
@@ -204,21 +205,14 @@ class AuthorDetailViewTest(TestCase):
 class PostsDetailViewTest(TestCase):
 
     def setUp(self):
-        self.user = User(username='test_user', password='test_pass')
-        self.user.save()
-        self.user.author.bio='test_bio'
-        self.user.author.visible = True
-        self.user.author.save()
+        self.user = create_user(username='test_user', password='test_pass', author_visible=True, author_bio='test_bio')
 
     def test_post_detail_returns_not_found(self):
         resp = self.client.get(reverse('blog:post_detail', kwargs={'pk': 1}))
         self.assertEquals(resp.status_code, 404)
 
     def test_post_detail_returns_not_found_for_posts_by_invisible_authors(self):
-        user = User(username=f'test', password=f'test')
-        user.save()
-        user.author.visible = False
-        user.author.save()
+        user = create_user(f'test_hidden_user', f'test_hidden_pass')
         post = Post(title=f'test_title', content=f'test_content', author=user.author)
         post.save()
 
@@ -258,20 +252,14 @@ class PostsDetailViewTest(TestCase):
 class PostCommentsViewTest(TestCase):
 
     def setUp(self):
-        self.user = User(username='test_user', password='test_pass')
-        self.user.save()
-        self.user.author.visible = True
-        self.user.author.save()
+        self.user = create_user('test_user', 'test_pass', author_visible=True)
 
     def test_post_comments_index_returns_not_found(self):
         resp = self.client.get(reverse('blog:post_comment_index', kwargs={'pk': 1}))
         self.assertEqual(resp.status_code, 404)
 
     def test_post_comments_index_returns_not_found_for_post_with_hidden_author(self):
-        user = User(username='test_hidden_user', password='test_hidden_pass')
-        user.save()
-        user.author.visible = False
-        user.author.save()
+        user = create_user('test_hidden_user', 'test_hidden_pass')
         post = Post(title=f'test_title', content=f'test_content', author=user.author)
         post.save()
         resp = self.client.get(reverse('blog:post_comment_index', kwargs={'pk': post.pk}))
@@ -296,3 +284,8 @@ class PostCommentsViewTest(TestCase):
             self.assertContains(resp, comment.text)
         self.assertQuerysetEqual(resp.context['comments'], comments)
     
+class UserEditViewTest(TestCase):
+    
+
+    def setUp(self):
+        pass
