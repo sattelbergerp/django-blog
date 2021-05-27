@@ -36,6 +36,10 @@
     margin: 20px auto;
 }
 
+.form-window-wide {
+    max-width: 800px;
+}
+
 .post-header-image {
     width: 50%;
     margin-left: 25%;

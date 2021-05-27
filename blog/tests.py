@@ -1,15 +1,25 @@
 from datetime import timedelta
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.contrib.auth.models import Permission, User
+from django.contrib.auth import authenticate
 from .models import Author, Tag, Post, Comment
 from django.db.utils import IntegrityError
 from django.utils import timezone
+from django.conf import settings
+from os.path import join, exists, basename
+from os import makedirs, copy_file_range, stat
+from PIL import Image
+from shutil import copyfile
+
+TEST_RESOURCES_PATH = getattr(settings, 'TEST_RESOURCES_PATH', 'test_resources')
+TEST_MEDIA_ROOT = join(settings.BASE_DIR, 'test_resources/test_uploads_dir/')
 
 #util functions
 def create_user(username, password, author_visible=False, author_bio=None, perms = [], staff=False, superuser=False):
-    user = User(username=username, password=password)
+    user = User(username=username)
     user.save()
+    user.set_password(password)
     user.author.visible = author_visible
     if author_bio:
         user.author.bio = author_bio
@@ -19,8 +29,21 @@ def create_user(username, password, author_visible=False, author_bio=None, perms
     user.is_superuser = superuser
     user.is_staff = staff
     user.save()
-    pk = user.pk
-    return User.objects.get(pk=pk)
+    return reload_user(user)
+
+def create_post(author, title, content, header_image=None):
+    if type(author) == User:
+        author = author.author
+    post = Post(author=author, title=title, content=content)
+    if header_image:
+        copyfile(join(TEST_RESOURCES_PATH, header_image), join(TEST_MEDIA_ROOT, join(Post.header_image.field.upload_to, header_image)))
+        post.header_image = join(Post.header_image.field.upload_to, header_image)
+        post.header_image_name = header_image
+    post.save()
+    return post
+
+def reload_user(user):
+    return User.objects.get(pk=user.pk)
 
 #Model tests
 class AuthorModelTest(TestCase):
@@ -286,6 +309,242 @@ class PostCommentsViewTest(TestCase):
     
 class UserEditViewTest(TestCase):
     
-
     def setUp(self):
-        pass
+        self.no_perms_user = create_user('no_perms_user', 'test_pass', author_bio='Old Bio')
+        self.author_perms_user = create_user('author_perms_user', 'test_pass', perms=['modify_own_author'], author_bio='Old Bio')
+        self.mod_perms_user = create_user('mod_perms_user', 'test_pass', perms=['change_author'], author_bio='Old Bio')
+        self.staff_user = create_user('staff_user', 'test_pass', staff=True, author_bio='Old Bio')
+        self.superuser = create_user('superuser', 'test_pass', staff=True, superuser=True, author_bio='Old Bio')
+
+    def test_user_edit_page_doesnt_allow_users_without_author_perms_to_set_author_settings(self):
+        post_data = {'bio': 'New Bio'}
+        self.client.force_login(self.no_perms_user)
+        resp = self.client.post(reverse('blog:user_edit', kwargs={'slug': self.no_perms_user.author.slug}), post_data)
+        user = reload_user(self.no_perms_user)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(user.author.bio, 'Old Bio')
+        self.assertEqual(user.author.visible, False)
+
+    def test_user_edit_page_allows_users_with_author_perms_to_set_own_author_settings(self):
+        post_data = {'bio': 'New Bio'}
+        self.client.force_login(self.author_perms_user)
+        resp = self.client.post(reverse('blog:user_edit', kwargs={'slug': self.author_perms_user.author.slug}), post_data)
+        user = reload_user(self.author_perms_user)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(user.author.bio, 'New Bio')
+
+    def test_user_edit_page_doesnt_all_users_with_author_perms_to_change_others_author_settings(self):
+        post_data = {'bio': 'New Bio'}
+        self.client.force_login(self.author_perms_user)
+        resp = self.client.post(reverse('blog:user_edit', kwargs={'slug': self.no_perms_user.author.slug}), post_data)
+        user = reload_user(self.no_perms_user)
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(user.author.bio, 'Old Bio')
+
+    def test_user_edit_page_allows_mods_to_change_other_users_author_status(self):
+        post_data = {'author_enabled': True}
+        self.client.force_login(self.mod_perms_user)
+        resp = self.client.post(reverse('blog:user_edit', kwargs={'slug': self.no_perms_user.author.slug}), post_data)
+        user = reload_user(self.no_perms_user)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(user.author.visible, True)
+        self.assertTrue(user.has_perm('blog.modify_own_author'))
+        self.assertTrue(user.has_perm('blog.create_own_post'))
+
+    def test_user_edit_page_allows_staff_to_change_other_users_mod_status(self):
+        post_data = {'moderator': True}
+        self.client.force_login(self.staff_user)
+        resp = self.client.post(reverse('blog:user_edit', kwargs={'slug': self.no_perms_user.author.slug}), post_data)
+        user = reload_user(self.no_perms_user)
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(user.has_perm('blog.change_author'))
+
+    def util_try_changing_user_password_and_email(self, user, login_user, should_work, new_password = 'new_password', current_password='test_pass', new_email='new@test.test'):
+        self.assertIsNotNone(authenticate(username=user.username, password=current_password), msg='Check current password matches')
+        current_email = user.email
+        post_data = {'email': new_email, 'current_password': current_password, 'password': new_password, 'confirm_password': new_password}
+        self.client.force_login(login_user)
+        resp = self.client.post(reverse('blog:user_edit', kwargs={'slug': user.author.slug}), post_data)
+        user = reload_user(user)
+        if should_work:
+            self.assertEqual(resp.status_code, 200)
+            self.assertIsNone(authenticate(username=user.username, password=current_password), 'Old password still works')
+            self.assertIsNotNone(authenticate(username=user.username, password=new_password), 'New password doesn\'t work')
+            self.assertEqual(user.email, new_email)
+        else:
+            self.assertIsNone(authenticate(username=user.username, password=new_password))
+            self.assertNotEqual(user.email, new_email)
+
+    def test_user_edit_page_allows_any_user_to_change_their_own_password_and_email(self):
+        self.util_try_changing_user_password_and_email(self.no_perms_user, self.no_perms_user, True)
+        self.util_try_changing_user_password_and_email(self.author_perms_user, self.author_perms_user, True)
+        self.util_try_changing_user_password_and_email(self.mod_perms_user, self.mod_perms_user, True)
+        self.util_try_changing_user_password_and_email(self.staff_user, self.staff_user, True)
+        self.util_try_changing_user_password_and_email(self.superuser, self.superuser, True)
+
+    def test_user_edit_page_blocks_no_perms_users_from_changing_other_users_password_and_email(self):
+        self.util_try_changing_user_password_and_email(self.author_perms_user, self.no_perms_user, False)
+
+    def test_user_edit_page_blocks_author_perms_users_from_changing_other_users_password_and_email(self):
+        self.util_try_changing_user_password_and_email(self.no_perms_user, self.author_perms_user, False)
+
+    def test_user_edit_page_blocks_mod_perms_users_from_changing_other_users_password_and_email(self):
+        self.util_try_changing_user_password_and_email(self.no_perms_user, self.mod_perms_user, False)
+
+    def test_user_edit_page_blocks_staff_users_from_changing_other_users_password_and_email(self):
+        self.util_try_changing_user_password_and_email(self.no_perms_user, self.staff_user, False)
+
+    def test_user_edit_page_blocks_superusers_from_changing_other_users_password_and_email(self):
+        self.util_try_changing_user_password_and_email(self.no_perms_user, self.superuser, False)
+
+@override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT)
+class PostCreateViewTest(TestCase):
+    
+    def setUp(self):
+        self.hidden_blog_user = create_user('hidden_blog_user', 'test_pass', author_bio='Old Bio', perms=['modify_own_author', 'create_own_post'])
+        self.no_perms_user = create_user('no_perms_user', 'test_pass', author_bio='Old Bio', author_visible=True)
+        self.author_perms_user = create_user('author_perms_user', 'test_pass', perms=['modify_own_author', 'create_own_post'], author_bio='Old Bio', author_visible=True)
+        self.mod_perms_user = create_user('mod_perms_user', 'test_pass', perms=['change_author'], author_bio='Old Bio', author_visible=True)
+        self.staff_user = create_user('staff_user', 'test_pass', staff=True, author_bio='Old Bio', author_visible=True)
+        self.superuser = create_user('superuser', 'test_pass', staff=True, superuser=True, author_bio='Old Bio', author_visible=True)
+
+    def test_post_create_returns_access_denied_for_users_without_create_own_post_perm(self):
+        post_data = {'title': 'Test title', 'content': 'test_content'}
+        self.client.force_login(self.no_perms_user)
+        resp = self.client.post(reverse('blog:post_create'), post_data)
+        self.assertEqual(resp.status_code, 403)
+
+    def test_post_create_returns_access_denied_for_users_with_hidden_blogs(self):
+        post_data = {'title': 'Test title', 'content': 'test_content'}
+        self.client.force_login(self.hidden_blog_user)
+        resp = self.client.post(reverse('blog:post_create'), post_data)
+        self.assertEqual(resp.status_code, 403)
+
+    def test_post_create_creates_post_and_uploads_image_correctly_and_converts_to_jpeg(self):
+        self.client.force_login(self.author_perms_user)
+        with open(join(TEST_RESOURCES_PATH, 'test_image.png'), 'rb') as fp:
+            post_data = {'title': 'Test title', 'content': 'test_content', 'header_image': fp}
+            resp = self.client.post(reverse('blog:post_create'), post_data, follow=True)
+            post = resp.context.get('post')
+            self.assertIsNotNone(post)
+            self.assertEqual(post.title, post_data['title'])
+            self.assertEqual(post.content, post_data['content'])
+            self.assertEqual(post.author.user, self.author_perms_user)
+            self.assertTrue(exists(post.header_image.path), msg=f'File {post.header_image.path} does not exist')
+            self.assertEqual(basename(post.header_image.name), f'header_image_post_{post.pk}.jpeg')
+            self.assertEqual(post.header_image_name, 'test_image.png')
+            with Image.open(join(TEST_RESOURCES_PATH, 'test_image.png')) as source:
+                with Image.open(post.header_image.path) as uploaded:
+                    self.assertEqual(source.width, uploaded.width)
+                    self.assertEqual(source.height, uploaded.height)
+                    self.assertEqual(source.format, 'PNG')
+                    self.assertEqual(uploaded.format, 'JPEG')
+
+    def test_post_create_strips_metadata_from_image(self):
+        self.client.force_login(self.author_perms_user)
+        with open(join(TEST_RESOURCES_PATH, 'image_with_exif.jpg'), 'rb') as fp:
+            post_data = {'title': 'Test title', 'content': 'test_content', 'header_image': fp}
+            resp = self.client.post(reverse('blog:post_create'), post_data, follow=True)
+            post = resp.context.get('post')
+            self.assertIsNotNone(post)
+
+            with Image.open(join(TEST_RESOURCES_PATH, 'image_with_exif.jpg')) as image:
+                self.assertNotEqual(len(image.getexif()), 0, msg='Source image has no exif data')
+
+            with Image.open(post.header_image.path) as image:
+                self.assertEqual(len(image.getexif()), 0, msg='Uploaded image has metadata')
+
+    def test_post_create_fails_for_high_resolution_images(self):
+        self.client.force_login(self.author_perms_user)
+        with open(join(TEST_RESOURCES_PATH, 'compression_bomb.jpeg'), 'rb') as fp:
+            post_data = {'title': 'Test title', 'content': 'test_content', 'header_image': fp}
+            resp = self.client.post(reverse('blog:post_create'), post_data, follow=True)
+            post = resp.context.get('post')
+            self.assertIsNone(post)
+            
+@override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT)
+class PostEditViewTest(TestCase):
+    
+    def setUp(self):
+        self.hidden_blog_user = create_user('hidden_blog_user', 'test_pass', author_bio='Old Bio', perms=['modify_own_author', 'create_own_post'])
+        self.no_perms_user = create_user('no_perms_user', 'test_pass', author_bio='Old Bio', author_visible=True)
+        self.author_perms_user = create_user('author_perms_user', 'test_pass', perms=['modify_own_author', 'create_own_post'], author_bio='Old Bio', author_visible=True)
+        self.mod_perms_user = create_user('mod_perms_user', 'test_pass', perms=['change_author'], author_bio='Old Bio', author_visible=True)
+        self.staff_user = create_user('staff_user', 'test_pass', staff=True, author_bio='Old Bio', author_visible=True)
+        self.superuser = create_user('superuser', 'test_pass', staff=True, superuser=True, author_bio='Old Bio', author_visible=True)
+        self.post_with_header_image = create_post(self.no_perms_user, 'With Header Image', 'Has a header image', header_image='test_image.png')
+        self.post_without_header_image = create_post(self.no_perms_user, 'Without Header Image', 'No header image')
+        self.post_with_hidden_author = create_post(self.hidden_blog_user, 'Hidden', 'hidden author')
+
+    def test_edit_post_returns_not_found_for_post_that_does_not_exist(self):
+        self.client.force_login(self.no_perms_user)
+        post_data = {'title': 'Test title', 'content': 'test_content'}
+        resp = self.client.post(reverse('blog:post_edit', kwargs={'pk': 1000000}), post_data)
+        self.assertEqual(resp.status_code, 404)
+
+    def test_edit_post_returns_not_found_for_post_with_hidden_author(self):
+        self.client.force_login(self.hidden_blog_user)
+        post_data = {'title': 'Test title', 'content': 'test_content'}
+        resp = self.client.post(reverse('blog:post_edit', kwargs={'pk': self.post_with_hidden_author.pk}), post_data)
+        self.assertEqual(resp.status_code, 404)
+        
+    def test_edit_post_returns_access_denied_for_users_that_didnt_create_the_post(self):
+        self.client.force_login(self.superuser)
+        post_data = {'title': 'Test title', 'content': 'test_content'}
+        resp = self.client.post(reverse('blog:post_edit', kwargs={'pk': self.post_without_header_image.pk}), post_data)
+        self.assertEqual(resp.status_code, 403)
+
+    def test_post_edit_modifies_post_and_uploads_image_correctly_and_converts_to_jpeg(self):
+        self.client.force_login(self.no_perms_user)
+        with open(join(TEST_RESOURCES_PATH, 'test_image.png'), 'rb') as fp:
+            post_data = {'title': 'Test title', 'content': 'test_content', 'header_image': fp}
+            resp = self.client.post(reverse('blog:post_edit', kwargs={'pk': self.post_without_header_image.pk}), post_data)
+            post = Post.objects.get(pk=self.post_without_header_image.pk)
+            self.assertEqual(post.title, post_data['title'])
+            self.assertEqual(post.content, post_data['content'])
+            self.assertEqual(post.author.user, self.no_perms_user)
+            self.assertTrue(exists(post.header_image.path), msg=f'File {post.header_image.path} does not exist')
+            self.assertEqual(basename(post.header_image.name), f'header_image_post_{post.pk}.jpeg')
+            self.assertEqual(post.header_image_name, 'test_image.png')
+            with Image.open(join(TEST_RESOURCES_PATH, 'test_image.png')) as source:
+                with Image.open(post.header_image.path) as uploaded:
+                    self.assertEqual(source.width, uploaded.width)
+                    self.assertEqual(source.height, uploaded.height)
+                    self.assertEqual(source.format, 'PNG')
+                    self.assertEqual(uploaded.format, 'JPEG')
+
+    def test_post_edit_strips_metadata_from_image(self):
+        self.client.force_login(self.no_perms_user)
+        with open(join(TEST_RESOURCES_PATH, 'image_with_exif.jpg'), 'rb') as fp:
+            post_data = {'title': 'Test title', 'content': 'test_content', 'header_image': fp}
+            resp = self.client.post(reverse('blog:post_edit', kwargs={'pk': self.post_with_header_image.pk}), post_data)
+            post = Post.objects.get(pk=self.post_with_header_image.pk)
+
+            with Image.open(join(TEST_RESOURCES_PATH, 'image_with_exif.jpg')) as image:
+                self.assertNotEqual(len(image.getexif()), 0, msg='Source image has no exif data')
+
+            with Image.open(post.header_image.path) as image:
+                self.assertEqual(len(image.getexif()), 0, msg='Uploaded image has metadata')
+
+    def test_post_edit_fails_for_high_resolution_images(self):
+        self.client.force_login(self.no_perms_user)
+        original_header_image = self.post_with_header_image.header_image_name
+        with open(join(TEST_RESOURCES_PATH, 'compression_bomb.jpeg'), 'rb') as fp:
+            post_data = {'title': 'Test title', 'content': 'test_content', 'header_image': fp}
+            resp = self.client.post(reverse('blog:post_edit', kwargs={'pk': self.post_with_header_image.pk}), post_data)
+            post = Post.objects.get(pk=self.post_with_header_image.pk)
+            self.assertEqual(post.header_image_name, original_header_image)
+
+    #Deletes test data
+    def test_post_edit_removes_header_images_from_post(self):
+        self.client.force_login(self.no_perms_user)
+        original_header_image_path = self.post_with_header_image.header_image.path
+        self.assertTrue(exists(original_header_image_path))
+        
+        post_data = {'title': 'Test title', 'content': 'test_content', 'remove_header_image': True}
+        resp = self.client.post(reverse('blog:post_edit', kwargs={'pk': self.post_with_header_image.pk}), post_data)
+        post = Post.objects.get(pk=self.post_with_header_image.pk)
+        self.assertFalse(post.header_image)
+        self.assertFalse(exists(original_header_image_path), msg='Header image was not deleted')
+            
+                    

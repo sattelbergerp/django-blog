@@ -3,7 +3,9 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError
 from django.conf import settings
-from .models import Author
+from .models import Author, Post
+from PIL import Image
+from django.contrib.humanize.templatetags.humanize import intcomma
 
 class BaseUserForm(forms.ModelForm):
     confirm_password = forms.CharField(max_length=User.password.field.max_length, required=True)
@@ -51,9 +53,26 @@ class UserSettingsForm(BaseUserForm):
                 self.add_error('current_password', 'Password is incorrect')
 
 class AuthorSettingsForm(forms.ModelForm):
-    author_enabled = forms.BooleanField()
-    moderator = forms.BooleanField()
+    author_enabled = forms.BooleanField(required=False)
+    moderator = forms.BooleanField(required=False)
 
     class Meta:
         model = Author
         fields = ['bio']
+
+class PostForm(forms.ModelForm):
+    tags = forms.CharField(max_length=255, required=False)
+    remove_header_image = forms.BooleanField(required=False)
+
+    class Meta:
+        model = Post
+        fields = ['title', 'header_image', 'content']
+
+    def clean(self):
+        super().clean()
+        header_image_file = self.cleaned_data.get('header_image')
+        if header_image_file:
+            with Image.open(header_image_file) as im:
+                total_pixels = im.width * im.height
+                if total_pixels > 40000000:
+                    self.add_error('header_image', f'Image size ({intcomma(total_pixels)} pixels) exceeds limit of 10,000,000 pixels')

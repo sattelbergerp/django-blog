@@ -1,3 +1,4 @@
 db.sqlite3
 Pipfile.lock
 media/*
+test_resources/test_uploads_dir/*

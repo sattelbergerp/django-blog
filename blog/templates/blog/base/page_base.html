@@ -38,11 +38,11 @@
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                                 {% if user.is_authenticated %}
-                                    {% if perms.blog.create_own_post %}
-                                        <li><a class="dropdown-item" href="#">New post</a></li>
+                                    {% if perms.blog.create_own_post and user.author.visible %}
+                                        <li><a class="dropdown-item" href="{% url 'blog:post_create' %}">New post</a></li>
                                     {% endif %}
                                     {% if user.author.visible %}
-                                        <li><a class="dropdown-item" href="#">My blog</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'blog:author_detail' slug=user.author.slug %}">My blog</a></li>
                                     {% endif %}
                                     <li><a class="dropdown-item" href="{% url 'blog:user_edit' slug=user.author.slug %}">Settings</a></li>
                                     <li><hr class="dropdown-divider"></li>

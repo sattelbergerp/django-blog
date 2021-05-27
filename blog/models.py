@@ -4,11 +4,13 @@ from django.db.models.signals import post_save, post_init, pre_save
 from django.dispatch import receiver
 from django.template.defaultfilters import slugify, truncatechars
 from django.urls import reverse
+from os.path import basename
 
 class Post(models.Model):
     
     title = models.CharField(max_length=255)
     header_image = models.ImageField(null=True, blank=True, upload_to='blog_post_header_images/')
+    header_image_name = models.CharField(null=True, blank=True, max_length=header_image.max_length)
     content = models.TextField(max_length=50000)
     tags = models.ManyToManyField('Tag')
     author = models.ForeignKey('Author', on_delete=models.CASCADE)
@@ -26,6 +28,17 @@ class Post(models.Model):
 
     def has_been_edited(self):
         return (self.updated_on - self.created_on).total_seconds() > 60
+
+    def tags_str(self):
+        return ', '.join([tag.__str__() for tag in self.tags.all()])
+
+    def get_header_image_file_name(self):
+        if self.header_image_name and self.header_image:
+            return basename(self.header_image_name)
+        elif self.header_image:
+            return basename(self.header_image.name)
+        else:
+            return None
 
     def __str__(self):
         return truncatechars(self.title, 100)
