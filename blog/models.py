@@ -1,10 +1,11 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Permission, User, Group
 from django.db.models.signals import post_save, post_init, pre_save
 from django.dispatch import receiver
 from django.template.defaultfilters import slugify, truncatechars
 from django.urls import reverse
 from os.path import basename
+from .util import create_group_if_not_exists
 
 class Post(models.Model):
     
@@ -51,10 +52,17 @@ class Comment(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        permissions = [
+            ("delete_comments_on_own_post", "Can delete any comment left on a post they created"),
+        ]
+
     def __str__(self):
         return f'{self.commenter}: {truncatechars(self.text, 100)}'
 
 class Author(models.Model):
+    AUTHOR_PERMS = ['modify_own_author', 'create_own_post', 'delete_comments_on_own_post']
+    MOD_PERMS = ['delete_comment', 'delete_post', 'change_author', 'delete_user']
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=False)
     slug = models.SlugField(unique=True)
     bio = models.TextField(max_length=500, null=True, blank=True)
@@ -64,6 +72,21 @@ class Author(models.Model):
         permissions = [
             ("modify_own_author", "Can change their own author settings and visibilty status"),
         ]
+
+    def set_author(self, is_author):
+        group = create_group_if_not_exists('author', Author.AUTHOR_PERMS)
+        if is_author:
+            self.user.groups.add(group)
+        else:
+            self.user.groups.remove(group)
+        self.visible = is_author
+
+    def set_moderator(self, is_moderator):
+        create_group_if_not_exists('mod', Author.MOD_PERMS)
+        if is_moderator:
+            self.user.groups.add(Group.objects.get(name='mod'))
+        else:
+            self.user.groups.remove(Group.objects.get(name='mod'))
 
     def get_absolute_url(self):
         return reverse('blog:author_detail', kwargs={'slug': self.slug})

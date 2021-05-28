@@ -79,16 +79,10 @@ def user_edit_view(request, slug):
                 author.visible = author_form.cleaned_data.get('author_enabled')
 
                 if 'author_enabled' in author_form.cleaned_data:
-                    if author_form.cleaned_data['author_enabled']:
-                        author.user.user_permissions.add(Permission.objects.get(codename='modify_own_author'), Permission.objects.get(codename='create_own_post'))
-                    else:
-                        author.user.user_permissions.remove(Permission.objects.get(codename='modify_own_author'), Permission.objects.get(codename='create_own_post'))
-                
+                    author.set_author(author_form.cleaned_data['author_enabled'])
+                    
                 if 'moderator' in author_form.cleaned_data and request.user.is_staff:
-                    if author_form.cleaned_data['moderator']:
-                        author.user.user_permissions.add(Permission.objects.get(codename='change_author'))
-                    else:
-                        author.user.user_permissions.remove(Permission.objects.get(codename='change_author'))
+                    author.set_moderator(author_form.cleaned_data['moderator'])
                 author.save()
             author.user.save()
             

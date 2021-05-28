@@ -1,7 +1,7 @@
 from datetime import timedelta
 from django.test import TestCase, override_settings
 from django.urls import reverse
-from django.contrib.auth.models import Permission, User
+from django.contrib.auth.models import Permission, User, Group
 from django.contrib.auth import authenticate
 from .models import Author, Tag, Post, Comment
 from django.db.utils import IntegrityError
@@ -11,21 +11,28 @@ from os.path import join, exists, basename
 from os import makedirs, copy_file_range, stat
 from PIL import Image
 from shutil import copyfile
+from .util import user_in_group
 
 TEST_RESOURCES_PATH = getattr(settings, 'TEST_RESOURCES_PATH', 'test_resources')
 TEST_MEDIA_ROOT = join(settings.BASE_DIR, 'test_resources/test_uploads_dir/')
+Image.MAX_IMAGE_PIXELS = None
 
 #util functions
-def create_user(username, password, author_visible=False, author_bio=None, perms = [], staff=False, superuser=False):
+def create_user(username, password, author_visible=False, author_bio=None, perms = [], author=False, mod=False, staff=False, superuser=False):
     user = User(username=username)
     user.save()
     user.set_password(password)
     user.author.visible = author_visible
     if author_bio:
         user.author.bio = author_bio
+    if author:
+        user.author.set_author(True)
+    if mod:
+        user.author.set_moderator(True)
     user.author.save()
     for perm in perms:
         user.user_permissions.add(Permission.objects.get(codename=perm))
+    
     user.is_superuser = superuser
     user.is_staff = staff
     user.save()
@@ -48,27 +55,75 @@ def reload_user(user):
 #Model tests
 class AuthorModelTest(TestCase):
 
+    def setUp(self):
+        self.user = create_user("test_user", "test_pass")
+
     def test_author_created_when_user_created(self):
-       user = create_user("test_user", "test_pass")
-       self.assertTrue(user.author)
+       self.assertTrue(self.user.author)
 
     def test_author_created_hidden(self):
-       user = create_user("test_user", "test_pass")
-       self.assertFalse(user.author.visible)
+       self.assertFalse(self.user.author.visible)
 
     def test_author_generates_correct_slug(self):
-       user = create_user("test#_$user%$^&", "test_pass")
-       self.assertEqual(user.author.slug, 'test_user')
+       user = create_user("test#_$user_slug%$^&", "test_pass")
+       self.assertEqual(user.author.slug, 'test_user_slug')
 
     def test_deleting_user_deletes_author(self):
-       user = create_user("test#_$user%$^&", "test_pass")
        self.assertEqual(Author.objects.count(), 1)
-       user.delete()
+       self.user.delete()
        self.assertEqual(Author.objects.count(), 0)
 
     def test_creating_author_without_user_fails(self):
         author = Author()
         self.assertRaises(IntegrityError, author.save)
+
+    def test_author_set_author_false_when_already_false_does_nothing(self):
+       self.assertFalse(self.user.groups.exists())
+       self.user.author.set_author(False)
+       self.assertFalse(self.user.groups.exists())
+
+    def test_author_set_author_true_creates_author_group_with_correct_permissions(self):
+       self.assertFalse(Group.objects.filter(name='author').exists())
+       self.user.author.set_author(True)
+       group = Group.objects.get(name='author')
+       for perm in Author.AUTHOR_PERMS:
+           self.user.has_perm(f'blog.{perm}')
+
+    def test_author_set_author_true_puts_a_user_in_author_group_and_sets_author_page_visible(self):
+        self.assertFalse(user_in_group(self.user, 'author'))
+        self.user.author.set_author(True)
+        self.assertTrue(user_in_group(self.user, 'author'))
+        self.assertTrue(self.user.author.visible)
+
+    def test_author_set_author_false_removes_user_from_author_group_and_sets_page_invisible(self):
+        user_author = create_user("author_user", "author_pass", author=True)
+        self.assertTrue(user_in_group(user_author, 'author'))
+        user_author.author.set_author(False)
+        self.assertFalse(user_in_group(user_author, 'author'))
+        self.assertFalse(user_author.author.visible)
+
+    def test_author_set_moderator_false_when_already_false_does_nothing(self):
+       self.assertFalse(self.user.groups.exists())
+       self.user.author.set_moderator(False)
+       self.assertFalse(self.user.groups.exists())
+
+    def test_author_set_moderator_true_creates_mod_group_with_correct_permissions(self):
+       self.assertFalse(Group.objects.filter(name='mod').exists())
+       self.user.author.set_moderator(True)
+       group = Group.objects.get(name='mod')
+       for perm in Author.MOD_PERMS:
+           self.user.has_perm(f'blog.{perm}')
+
+    def test_author_set_moderator_true_puts_a_user_in_mod_group(self):
+        self.assertFalse(user_in_group(self.user, 'mod'))
+        self.user.author.set_moderator(True)
+        self.assertTrue(user_in_group(self.user, 'mod'))
+
+    def test_author_set_moderator_false_removes_user_from_mod_group(self):
+        user_mod = create_user("mod_user", "mod_pass", mod=True)
+        self.assertTrue(user_in_group(user_mod, 'mod'))
+        user_mod.author.set_moderator(False)
+        self.assertFalse(user_in_group(user_mod, 'mod'))
 
 class TagModelTest(TestCase):
 
@@ -348,8 +403,7 @@ class UserEditViewTest(TestCase):
         user = reload_user(self.no_perms_user)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(user.author.visible, True)
-        self.assertTrue(user.has_perm('blog.modify_own_author'))
-        self.assertTrue(user.has_perm('blog.create_own_post'))
+        self.assertTrue(user_in_group(user, 'author'))
 
     def test_user_edit_page_allows_staff_to_change_other_users_mod_status(self):
         post_data = {'moderator': True}
@@ -357,7 +411,7 @@ class UserEditViewTest(TestCase):
         resp = self.client.post(reverse('blog:user_edit', kwargs={'slug': self.no_perms_user.author.slug}), post_data)
         user = reload_user(self.no_perms_user)
         self.assertEqual(resp.status_code, 200)
-        self.assertTrue(user.has_perm('blog.change_author'))
+        self.assertTrue(user_in_group(user, 'mod'))
 
     def util_try_changing_user_password_and_email(self, user, login_user, should_work, new_password = 'new_password', current_password='test_pass', new_email='new@test.test'):
         self.assertIsNotNone(authenticate(username=user.username, password=current_password), msg='Check current password matches')
@@ -535,7 +589,7 @@ class PostEditViewTest(TestCase):
             post = Post.objects.get(pk=self.post_with_header_image.pk)
             self.assertEqual(post.header_image_name, original_header_image)
 
-    #Deletes test data
+    #Deletes uploaded test data
     def test_post_edit_removes_header_images_from_post(self):
         self.client.force_login(self.no_perms_user)
         original_header_image_path = self.post_with_header_image.header_image.path

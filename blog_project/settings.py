@@ -16,6 +16,8 @@ from os import environ, path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+#Blog specific settings
+ENFORCE_PASSWORD_VALIDATION = True
 TEST_RESOURCES_PATH = path.join(BASE_DIR, 'test_resources')
 
 # Quick-start development settings - unsuitable for production
@@ -29,7 +31,6 @@ DEBUG = 'DJANGO_DEBUG' in environ and environ['DJANGO_DEBUG'] == 'True'
 
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
-ENFORCE_PASSWORD_VALIDATION = False
 
 ALLOWED_HOSTS = []
 
