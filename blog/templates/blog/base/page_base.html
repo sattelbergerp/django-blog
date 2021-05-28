@@ -1,5 +1,5 @@
 {% load static %}
-
+{% load blog_filters %}
 {% url 'blog:post_index' as post_index %}
 
 <!DOCTYPE html>
@@ -38,7 +38,7 @@
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                                 {% if user.is_authenticated %}
-                                    {% if perms.blog.create_own_post and user.author.visible %}
+                                    {% if user|can_create:'Post' and user.author.visible %}
                                         <li><a class="dropdown-item" href="{% url 'blog:post_create' %}">New post</a></li>
                                     {% endif %}
                                     {% if user.author.visible %}

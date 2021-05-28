@@ -24,11 +24,21 @@ class Post(models.Model):
             ("create_own_post", "Can create a new post with themselves as the author"),
         ]
 
+    @staticmethod
+    def can_user_create(user):
+        return (user.has_perm('blog.create_own_post') and user.author.visible)
+
     def get_absolute_url(self):
         return reverse('blog:post_detail', kwargs={'pk': self.pk})
 
     def has_been_edited(self):
         return (self.updated_on - self.created_on).total_seconds() > 60
+
+    def can_user_edit(self, user):
+        return self.author == user.author or user.has_perm('blog.edit_post')
+
+    def can_user_delete(self, user):
+        return self.author == user.author or user.has_perm('blog.delete_post')
 
     def tags_str(self):
         return ', '.join([tag.__str__() for tag in self.tags.all()])
@@ -87,6 +97,9 @@ class Author(models.Model):
             self.user.groups.add(Group.objects.get(name='mod'))
         else:
             self.user.groups.remove(Group.objects.get(name='mod'))
+
+    def can_user_edit(self, user):
+        return user.has_perm('blog.change_author') or (user == self.user and user.has_perm('blog.modify_own_author')) or user.is_staff
 
     def get_absolute_url(self):
         return reverse('blog:author_detail', kwargs={'slug': self.slug})

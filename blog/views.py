@@ -59,7 +59,7 @@ def user_edit_view(request, slug):
     
     author = get_object_or_404(Author, slug=slug)
     can_edit_user = request.user == author.user
-    can_edit_author = request.user.has_perm('blog.change_author') or (request.user == author.user and request.user.has_perm('blog.modify_own_author')) or request.user.is_staff
+    can_edit_author = author.can_user_edit(request.user)
     saved = False
     if not can_edit_user and not can_edit_author:
         raise PermissionDenied
@@ -106,7 +106,7 @@ def user_edit_view(request, slug):
 @login_required
 def post_edit_view(request, pk=None):
     post = get_object_or_404(Post, pk=pk, author__visible=True) if pk else None
-    if (post and post.author != request.user.author) or (not post and (not request.user.has_perm('blog.create_own_post') or not request.user.author.visible)):
+    if (post and not post.can_user_edit(request.user)) or (not post and not Post.can_user_create(request.user)):
         raise PermissionDenied
     
     if request.method == 'POST':

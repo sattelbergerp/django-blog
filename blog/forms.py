@@ -6,6 +6,7 @@ from django.conf import settings
 from .models import Author, Post
 from PIL import Image
 from django.contrib.humanize.templatetags.humanize import intcomma
+import string
 
 class BaseUserForm(forms.ModelForm):
     confirm_password = forms.CharField(max_length=User.password.field.max_length, required=True)
@@ -23,6 +24,20 @@ class BaseUserForm(forms.ModelForm):
         if password and getattr(settings, 'ENFORCE_PASSWORD_VALIDATION', True):
             if len(password) < 8:
                 self.add_error('password', 'Password must be at least 8 characters long')
+            num_lowercase, num_uppercase, num_digits, num_special = 0, 0, 0, 0
+            for char in password:
+                num_lowercase += 1 if char in string.ascii_lowercase else 0
+                num_uppercase += 1 if char in string.ascii_uppercase else 0
+                num_digits += 1 if char in string.digits else 0
+                num_special += 1 if char in string.punctuation else 0
+            if not num_lowercase:
+                self.add_error('password', 'Password must contain at least one lowercase character')
+            if not num_uppercase:
+                self.add_error('password', 'Password must contain at least one uppercase character')
+            if not num_digits:
+                self.add_error('password', 'Password must contain at least one number')
+            if not num_special:
+                self.add_error('password', 'Password must contain at least one special character')
 
 class UserSettingsForm(BaseUserForm):
     password = forms.CharField(max_length=User.password.field.max_length, required=False)

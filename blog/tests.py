@@ -413,6 +413,7 @@ class UserEditViewTest(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(user_in_group(user, 'mod'))
 
+    
     def util_try_changing_user_password_and_email(self, user, login_user, should_work, new_password = 'new_password', current_password='test_pass', new_email='new@test.test'):
         self.assertIsNotNone(authenticate(username=user.username, password=current_password), msg='Check current password matches')
         current_email = user.email
@@ -429,6 +430,7 @@ class UserEditViewTest(TestCase):
             self.assertIsNone(authenticate(username=user.username, password=new_password))
             self.assertNotEqual(user.email, new_email)
 
+    @override_settings(ENFORCE_PASSWORD_VALIDATION=False)
     def test_user_edit_page_allows_any_user_to_change_their_own_password_and_email(self):
         self.util_try_changing_user_password_and_email(self.no_perms_user, self.no_perms_user, True)
         self.util_try_changing_user_password_and_email(self.author_perms_user, self.author_perms_user, True)
@@ -450,6 +452,26 @@ class UserEditViewTest(TestCase):
 
     def test_user_edit_page_blocks_superusers_from_changing_other_users_password_and_email(self):
         self.util_try_changing_user_password_and_email(self.no_perms_user, self.superuser, False)
+
+    @override_settings(ENFORCE_PASSWORD_VALIDATION=True)
+    def test_user_edit_page_permits_valid_password(self):
+        self.util_try_changing_user_password_and_email(self.no_perms_user, self.no_perms_user, True, new_password='abcdef8A&')
+
+    @override_settings(ENFORCE_PASSWORD_VALIDATION=True)
+    def test_user_edit_page_denies_password_without_at_least_one_lowercase_char(self):
+        self.util_try_changing_user_password_and_email(self.no_perms_user, self.no_perms_user, False, new_password='ABCDEFGHIJ8*')
+
+    @override_settings(ENFORCE_PASSWORD_VALIDATION=True)
+    def test_user_edit_page_denies_password_without_at_least_one_uppercase_char(self):
+        self.util_try_changing_user_password_and_email(self.no_perms_user, self.no_perms_user, False, new_password='abcdefghij8*')
+
+    @override_settings(ENFORCE_PASSWORD_VALIDATION=True)
+    def test_user_edit_page_denies_password_without_at_least_one_number(self):
+        self.util_try_changing_user_password_and_email(self.no_perms_user, self.no_perms_user, False, new_password='ABCDEFGHIJ*')
+
+    @override_settings(ENFORCE_PASSWORD_VALIDATION=True)
+    def test_user_edit_page_denies_password_without_at_least_one_symbol(self):
+        self.util_try_changing_user_password_and_email(self.no_perms_user, self.no_perms_user, False, new_password='ABCDEFGHIJ8')
 
 @override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT)
 class PostCreateViewTest(TestCase):
