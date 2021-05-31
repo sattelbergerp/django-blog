@@ -565,7 +565,7 @@ class PostEditViewTest(TestCase):
         self.assertEqual(resp.status_code, 404)
         
     def test_edit_post_returns_access_denied_for_users_that_didnt_create_the_post(self):
-        self.client.force_login(self.superuser)
+        self.client.force_login(self.author_perms_user)
         post_data = {'title': 'Test title', 'content': 'test_content'}
         resp = self.client.post(reverse('blog:post_edit', kwargs={'pk': self.post_without_header_image.pk}), post_data)
         self.assertEqual(resp.status_code, 403)
@@ -627,7 +627,7 @@ class PostDeleteViewTest(TestCase):
 
     def setUp(self):
         self.no_perms_user = create_user('no_perms_user', 'test_pass', author_visible=True)
-        self.other_no_perms_user = create_user('other_no_perms_user', 'test_pass', author_visible=True)
+        self.author_perms_user = create_user('author_perms_user', 'test_pass', author=True, author_visible=True)
         self.mod_perms_user = create_user('mod_perms_user', 'test_pass', mod=True, author_visible=True)
         self.post = create_post(self.no_perms_user, 'post1', 'post1 author')
 
@@ -651,3 +651,136 @@ class PostDeleteViewTest(TestCase):
         resp = self.client.post(reverse('blog:post_delete', kwargs={'pk': self.post.pk}))
         self.assertEqual(resp.status_code, 403)
         self.assertTrue(Post.objects.filter(pk=self.post.pk).exists())
+
+class CommentCreateViewTest(TestCase):
+
+    def setUp(self):
+        self.no_perms_user = create_user('no_perms_user', 'test_pass', author_visible=True)
+        self.author_perms_user = create_user('author_perms_user', 'test_pass', author=True, author_visible=True)
+        self.mod_perms_user = create_user('mod_perms_user', 'test_pass', mod=True, author_visible=True)
+        self.post = create_post(self.author_perms_user, 'post1', 'post1 author')
+        self.post_other = create_post(self.author_perms_user, 'post2', 'post2 author')
+
+    def test_comment_create_returns_not_found_for_post_that_does_not_exists(self):
+        self.client.force_login(self.no_perms_user)
+        resp = self.client.get(reverse('blog:comment_create', kwargs={'pk': 0}))
+        self.assertEqual(resp.status_code, 404)
+
+    def test_comment_create_creates_a_comment_with_zero_votes_the_logged_in_user_and_the_selected_post(self):
+        self.client.force_login(self.no_perms_user)
+        resp = self.client.post(reverse('blog:comment_create', kwargs={'pk': self.post.pk}), {'text': 'Comment text!'})
+        self.assertEqual(resp.status_code, 302)
+        comment = Comment.objects.all()[0]
+        self.assertEqual(comment.text, 'Comment text!')
+        self.assertEqual(comment.votes, 0)
+        self.assertEqual(comment.commenter, self.no_perms_user)
+        self.assertEqual(comment.post, self.post)
+
+class CommentEditViewTest(TestCase):
+
+    def setUp(self):
+        self.no_perms_user = create_user('no_perms_user', 'test_pass', author_visible=True)
+        self.author_perms_user = create_user('author_perms_user', 'test_pass', author=True, author_visible=True)
+        self.edit_comment_user = create_user('mod_perms_user', 'test_pass', perms=['change_comment'], author_visible=True)
+        self.post = create_post(self.author_perms_user, 'post1', 'post1 author')
+        self.post_other = create_post(self.author_perms_user, 'post2', 'post2 author')
+        self.comment = self.post.comment_set.create(text='original text', commenter=self.no_perms_user)
+
+    def test_comment_edit_returns_not_found_for_comment_that_does_not_exists(self):
+        self.client.force_login(self.no_perms_user)
+        resp = self.client.get(reverse('blog:comment_edit', kwargs={'pk': 0}))
+        self.assertEqual(resp.status_code, 404)
+
+    def test_comment_edit_lets_users_edit_their_own_comments(self):
+        self.client.force_login(self.no_perms_user)
+        resp = self.client.post(reverse('blog:comment_edit', kwargs={'pk': self.post.pk}), {'text': 'New text'})
+        self.assertEqual(resp.status_code, 302)
+        comment = Comment.objects.get(pk=self.comment.pk)
+        self.assertEqual(comment.text, 'New text')
+
+    def test_comment_edit_lets_users_with_perms_edit_other_users_comments(self):
+        self.client.force_login(self.edit_comment_user)
+        resp = self.client.post(reverse('blog:comment_edit', kwargs={'pk': self.post.pk}), {'text': 'New text'})
+        self.assertEqual(resp.status_code, 302)
+        comment = Comment.objects.get(pk=self.comment.pk)
+        self.assertEqual(comment.text, 'New text')
+
+    def test_comment_edit_doesnt_let_users_without_perms_edit_others_comments(self):
+        self.client.force_login(self.author_perms_user)
+        resp = self.client.post(reverse('blog:comment_edit', kwargs={'pk': self.post.pk}), {'text': 'New text'})
+        self.assertEqual(resp.status_code, 403)
+        comment = Comment.objects.get(pk=self.comment.pk)
+        self.assertEqual(comment.text, 'original text')
+
+class CommentDeleteViewTest(TestCase):
+
+    def setUp(self):
+        self.no_perms_user = create_user('no_perms_user', 'test_pass', author_visible=True)
+        self.other_no_perms_user = create_user('other_no_perms_user', 'test_pass', author_visible=True)
+        self.author_perms_user = create_user('author_perms_user', 'test_pass', author=True, author_visible=True)
+        self.mod_user = create_user('mod_perms_user', 'test_pass', mod=True, author_visible=True)
+        self.post = create_post(self.author_perms_user, 'post1', 'post1 author')
+        self.post_other = create_post(self.mod_user, 'post2', 'post2 author')
+        self.comment = self.post.comment_set.create(text='original text', commenter=self.no_perms_user)
+        self.comment_other = self.post_other.comment_set.create(text='original text', commenter=self.mod_user)
+
+    def test_comment_delete_returns_not_found_for_comment_that_does_not_exists(self):
+        self.client.force_login(self.no_perms_user)
+        resp = self.client.get(reverse('blog:comment_delete', kwargs={'pk': 0}))
+        self.assertEqual(resp.status_code, 404)
+
+    def test_comment_delete_lets_users_delete_their_own_comments(self):
+        self.client.force_login(self.no_perms_user)
+        resp = self.client.post(reverse('blog:comment_delete', kwargs={'pk': self.comment.pk}))
+        self.assertFalse(Comment.objects.filter(pk=self.comment.pk).exists())
+
+    def test_comment_delete_lets_authors_delete_comments_on_their_own_post(self):
+        self.client.force_login(self.author_perms_user)
+        resp = self.client.post(reverse('blog:comment_delete', kwargs={'pk': self.comment.pk}))
+        self.assertFalse(Comment.objects.filter(pk=self.comment.pk).exists())
+
+    def test_comment_delete_lets_mods_delete_comments(self):
+        self.client.force_login(self.mod_user)
+        resp = self.client.post(reverse('blog:comment_delete', kwargs={'pk': self.comment.pk}))
+        self.assertFalse(Comment.objects.filter(pk=self.comment.pk).exists())
+
+    def test_comment_doesnt_let_users_delete_other_comments(self):
+        self.client.force_login(self.no_perms_user)
+        resp = self.client.post(reverse('blog:comment_delete', kwargs={'pk': self.comment_other.pk}))
+        self.assertTrue(Comment.objects.filter(pk=self.comment_other.pk).exists())
+
+    def test_comment_doesnt_let_authors_delete_comments_on_other_posts(self):
+        self.client.force_login(self.author_perms_user)
+        resp = self.client.post(reverse('blog:comment_delete', kwargs={'pk': self.comment_other.pk}))
+        self.assertTrue(Comment.objects.filter(pk=self.comment_other.pk).exists())
+
+class UserDetailViewTest(TestCase):
+
+    def setUp(self):
+        self.user = create_user('test_user1', 'test_pass', author_visible=True)
+        self.other_user = create_user('test_user2', 'test_pass', author_visible=True)
+
+    def test_user_detail_returns_not_found(self):
+        resp = self.client.get(reverse('blog:user_detail', kwargs={'slug': 'does-not-exist'}))
+        self.assertEqual(resp.status_code, 404)
+
+    def test_user_detail_returns_comments_sorted_by_creation_date(self):
+        post = Post(title=''.join([f't{i}' for i in range(100)]), content=''.join([f't{i}' for i in range(500)]), author=self.user.author)
+        post.save()
+        comments = []
+        day_deltas = [10, -5, 11, 2, -100]
+        for i in range(len(day_deltas)):
+            comment = post.comment_set.create(commenter=(self.user) if i%2 else self.other_user, votes=100, text=f'comment_{i}')
+            comment.save()
+            comment.created_on = timezone.now() - timedelta(days=day_deltas[i])
+            comment.save()
+            comments.append(comment)
+        
+        comments.sort(key=lambda x: x.created_on, reverse=True)
+
+        resp = self.client.get(reverse('blog:user_detail', kwargs={'slug': self.user.author.slug}))
+        for comment in comments:
+            if comment.commenter == self.user:
+                self.assertContains(resp, comment.text)
+            else:
+                self.assertNotContains(resp, comment.text)

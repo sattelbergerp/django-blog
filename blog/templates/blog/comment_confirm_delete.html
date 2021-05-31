@@ -1,0 +1,22 @@
+{% extends 'blog/base/page_base.html' %}
+{% load blog_filters %}
+
+{% block title %}
+    Comment - Delete
+{% endblock title %}
+
+{% block content %}
+    <div>
+        <div>
+            {% include 'blog/base/comment_base.html'%}
+        </div>
+        <span class="float-end">
+            
+            <form method="post">{% csrf_token %}
+                <input type="submit" class="btn btn-danger" value="Delete">
+                <a class="btn btn-primary" href="{% url 'blog:post_detail' comment.post.pk %}">Cancel</a>
+            </form>
+            
+        </span>
+    </div>   
+{% endblock content %}

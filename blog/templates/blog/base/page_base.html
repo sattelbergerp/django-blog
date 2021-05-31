@@ -42,8 +42,9 @@
                                         <li><a class="dropdown-item" href="{% url 'blog:post_create' %}">New post</a></li>
                                     {% endif %}
                                     {% if user.author.visible %}
-                                        <li><a class="dropdown-item" href="{% url 'blog:author_detail' slug=user.author.slug %}">My blog</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'blog:author_detail' slug=user.author.slug %}">Blog</a></li>
                                     {% endif %}
+                                    <li><a class="dropdown-item" href="{% url 'blog:user_detail' slug=user.author.slug %}">Profile</a></li>
                                     <li><a class="dropdown-item" href="{% url 'blog:user_edit' slug=user.author.slug %}">Settings</a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>

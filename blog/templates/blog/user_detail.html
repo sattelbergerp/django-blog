@@ -1,0 +1,24 @@
+{% extends 'blog/base/page_base.html' %}
+
+{% block title %}
+    User Comments
+{% endblock title %}
+
+{% block content %}
+    <div class="clearfix mb-2 mt-2">
+        <h3 class="d-inline">{{profile_user.username}}</h3>
+        <span class="user-controls float-end">
+            {% if profile_user.author.visible %}
+                <a class="btn btn-primary" href="{% url 'blog:author_detail' profile_user.author.slug %}">View blog</a>
+            {% endif %}
+        </span>
+    </div>
+    <ul class='comments-list'>
+        {% if comments %}
+            {% for comment in comments %}
+                {% include 'blog/base/comment_base.html'%}
+            {% endfor %}
+        {% endif %} 
+    </ul>
+    {% include 'blog/base/pagination_base.html' %}
+{% endblock content %}

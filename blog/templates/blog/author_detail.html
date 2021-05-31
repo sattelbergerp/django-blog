@@ -7,7 +7,14 @@
 
 {% block content %}
     <div class="">
-        <h4>{{author.user.username}}</h4>
+        <div class="clearfix mb-2 mt-2">
+            <h3 class="d-inline">{{author.user.username}}</h3>
+            <span class="user-controls float-end">
+                {% if author.visible %}
+                    <a class="btn btn-primary" href="{% url 'blog:user_detail' author.slug %}">View profile</a>
+                {% endif %}
+            </span>
+        </div>
         
         {{author.bio}}
     </div>

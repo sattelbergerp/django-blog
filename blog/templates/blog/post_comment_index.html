@@ -5,6 +5,21 @@
 {% endblock title %}
 
 {% block content %}
+    <div class="clearfix mb-2 mt-2">
+        <h3 class="post-comments-header"><a href="{% url 'blog:post_detail' post.pk %}">{{post.title}}</a></h3>
+        <div class="mt-2">
+            <h3 class="d-inline mt-2">All Comments</h3>
+            <span class="user-controls float-end">
+                {% if user.is_authenticated %}
+                    <a class="btn btn-primary" href="{% url 'blog:comment_create' post.id %}">Leave a comment</a>
+                {% endif %}
+                <div class="btn-group">
+                    <a href="{{ request.path }}?sort=top&page={{ self.page_obj.number }}" class="btn btn-primary{% if sort_by == 'top' %} active {% endif %}" aria-current="page">Top</a>
+                    <a href="{{ request.path }}?sort=recent&page={{ self.page_obj.number }}" class="btn btn-primary{% if sort_by == 'recent' %} active {% endif %}" aria-current="page">Recent</a>
+                  </div>
+            </span>
+        </div>
+    </div>
     <ul class='comments-list'>
         {% if comments %}
             {% for comment in comments %}

@@ -3,7 +3,7 @@ from django.template.defaultfilters import default
 from django.urls.base import reverse
 from blog.forms import AuthorSettingsForm, UserSettingsForm, PostForm
 from django.shortcuts import get_object_or_404, render
-from django.views.generic import ListView, DetailView, DeleteView
+from django.views.generic import ListView, DetailView, DeleteView, CreateView, UpdateView
 from django.views import View
 from .models import Post, Author, Comment, Tag
 from django.contrib.auth.decorators import login_required, permission_required
@@ -34,11 +34,19 @@ class PostCommentIndexView(ListView):
     template_name = 'blog/post_comment_index.html'
     context_object_name = 'comments'
 
+    def get_context_data(self, **kwargs):
+        context =  super().get_context_data(**kwargs)
+        context['post'] = self.post
+        context['sort_by'] = self.sort_by
+        return context
+
     def get_queryset(self):
         self.post = get_object_or_404(Post, pk=self.kwargs['pk'], author__visible=True)
+        self.sort_by = 'top'
         if 'sort' in self.request.GET:
             sort = self.request.GET['sort']
             if sort == 'recent':
+                self.sort_by = 'recent'
                 return self.post.comment_set.order_by('-created_on').all()
         return self.post.comment_set.order_by('-votes').all()
 
@@ -157,3 +165,60 @@ class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
     def get_success_url(self, *args, **kwargs):
         return reverse('blog:author_detail', kwargs={'slug': self.get_object().author.slug})
+
+class CommentCreateView(LoginRequiredMixin, CreateView):
+    model = Comment
+    fields = ['text']
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['post'] = get_object_or_404(Post, pk=self.kwargs['pk'])
+        return context
+
+    def form_valid(self, form):
+        post = get_object_or_404(Post, pk=self.kwargs['pk'])
+        comment = Comment(post=post, commenter=self.request.user, text=form.cleaned_data['text'])
+        comment.save()
+        return HttpResponseRedirect(reverse('blog:post_detail', kwargs={'pk': post.pk}))
+
+class CommentEditView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = Comment
+    fields = ['text']
+
+    def test_func(self):
+        return self.get_object().can_user_edit(self.request.user)
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['post'] = self.get_object().post
+        return context
+
+    def form_valid(self, form):
+        comment = self.get_object()
+        comment.text=form.cleaned_data['text']
+        comment.save()
+        return HttpResponseRedirect(reverse('blog:post_detail', kwargs={'pk': comment.post.pk}))
+
+class CommentDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    model = Comment
+
+    def test_func(self):
+        return self.get_object().can_user_delete(self.request.user)
+
+    def get_success_url(self, *args, **kwargs):
+        return reverse('blog:post_index')
+
+class UserDetailView(ListView):
+    paginate_by = 20
+    template_name = 'blog/user_detail.html'
+    context_object_name = 'comments'
+
+    def get_context_data(self, *args, **kwargs):
+        context =  super().get_context_data(*args, **kwargs)
+        context['profile_user'] = self.user
+        return context
+
+    def get_queryset(self):
+        self.user = get_object_or_404(Author, slug=self.kwargs['slug']).user
+        
+        return self.user.comment_set.order_by('-created_on').all()

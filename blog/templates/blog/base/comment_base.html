@@ -12,11 +12,16 @@
         </div>
         <div>
             <div class="comment-header">
-                By {{comment.commenter.username}} on {{comment.created_on}}
+                By <a href="{% url 'blog:user_detail' comment.commenter.author.slug %}">{{comment.commenter.username}}</a> on {{comment.created_on}}
+                <span>
+                    {% if user|can_edit:comment %}<a href="{% url 'blog:comment_edit' comment.pk %}">Edit</a>{% endif %}
+                    {% if user|can_delete:comment %}<a href="{% url 'blog:comment_delete' comment.pk %}"> Delete</a>{% endif %}
+                </span>
             </div>
             <div class="comment-text">
                 {{comment.text}}
             </div>
+            
         </div>
     </div>
 </li>

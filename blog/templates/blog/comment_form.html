@@ -5,14 +5,15 @@
 {% endblock title %}
     
 {% block content %}
-<div class="form-window">
-    <div>
-        Enter a comment for {post.author.user.username}'s post: {post.title}
-    </div>
+<div class="form-window form-window-wide">
     <form method="post" >
         {% csrf_token %}
         <div class="mb-3">
-            <label id="bio" class="form-label" for="{{form.text.name}}">Comment Text</label>
+            <label id="bio" class="form-label" for="{{form.text.name}}">
+                {% if comment %} Update your {% else %} Enter a {% endif %}
+                comment for <a href="{% url 'blog:author_detail' post.author.slug %}">{{post.author.user.username}}'s</a> post: 
+                <a href="{% url 'blog:post_detail' post.pk %}">{{post.title}}</a>
+            </label>
             <textarea rows="10" class="form-control{%if form.text.errors%} is-invalid{%endif%}" aria-label="With textarea" name="{{form.text.name}}">{% if form.text.value %}{{ form.text.value }}{% endif %}</textarea>
             <div class="invalid-feedback">
                 {% for error in form.text.errors %}

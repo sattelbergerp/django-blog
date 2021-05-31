@@ -67,6 +67,12 @@ class Comment(models.Model):
             ("delete_comments_on_own_post", "Can delete any comment left on a post they created"),
         ]
 
+    def can_user_edit(self, user):
+        return self.commenter == user or user.has_perm('blog.change_comment')
+
+    def can_user_delete(self, user):
+        return self.commenter == user or user.has_perm('blog.delete_comment') or self.post.author == user.author
+
     def __str__(self):
         return f'{self.commenter}: {truncatechars(self.text, 100)}'
 
