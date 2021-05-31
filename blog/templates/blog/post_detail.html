@@ -57,12 +57,10 @@
                         <a class="btn btn-primary" href="{% url 'blog:post_edit' post.pk %}">Edit</a>
                     {% endif %}
                     {% if user|can_delete:post%}
-                        <a class="btn btn-danger" href="{% url 'blog:post_edit' post.pk %}">Delete</a>
+                        <a class="btn btn-danger" href="{% url 'blog:post_delete' post.pk %}">Delete</a>
                     {% endif %}
                 </span>
             </div>   
         </div>
     </div> 
 {% endblock content %}
-    
-    

@@ -3,13 +3,14 @@ from django.template.defaultfilters import default
 from django.urls.base import reverse
 from blog.forms import AuthorSettingsForm, UserSettingsForm, PostForm
 from django.shortcuts import get_object_or_404, render
-from django.views.generic import ListView, DetailView
+from django.views.generic import ListView, DetailView, DeleteView
 from django.views import View
 from .models import Post, Author, Comment, Tag
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth import login
 from django.contrib.auth.models import Permission
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.template.defaultfilters import slugify
 from PIL import Image
 from django.core.files.base import ContentFile
@@ -147,3 +148,12 @@ def post_edit_view(request, pk=None):
     else:
         form = PostForm(instance=post, initial={'tags': post.tags_str() if post else ''})
     return render(request, 'blog/post_edit.html', {'form': form, 'post': post})
+
+class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    model = Post
+
+    def test_func(self):
+        return self.get_object().can_user_delete(self.request.user)
+
+    def get_success_url(self, *args, **kwargs):
+        return reverse('blog:author_detail', kwargs={'slug': self.get_object().author.slug})

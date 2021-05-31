@@ -623,4 +623,31 @@ class PostEditViewTest(TestCase):
         self.assertFalse(post.header_image)
         self.assertFalse(exists(original_header_image_path), msg='Header image was not deleted')
             
-                    
+class PostDeleteViewTest(TestCase):
+
+    def setUp(self):
+        self.no_perms_user = create_user('no_perms_user', 'test_pass', author_visible=True)
+        self.other_no_perms_user = create_user('other_no_perms_user', 'test_pass', author_visible=True)
+        self.mod_perms_user = create_user('mod_perms_user', 'test_pass', mod=True, author_visible=True)
+        self.post = create_post(self.no_perms_user, 'post1', 'post1 author')
+
+    def test_post_delete_removes_a_users_post_if_they_created_it(self):
+        self.client.force_login(self.no_perms_user)
+        resp = self.client.post(reverse('blog:post_delete', kwargs={'pk': self.post.pk}))
+        self.assertRaises(Post.DoesNotExist, lambda: Post.objects.get(pk=self.post.pk))
+
+    def test_post_delete_mods_can_remove_other_users_posts(self):
+        self.client.force_login(self.mod_perms_user)
+        resp = self.client.post(reverse('blog:post_delete', kwargs={'pk': self.post.pk}))
+        self.assertRaises(Post.DoesNotExist, lambda: Post.objects.get(pk=self.post.pk))
+
+    def test_post_delete_other_users_cant_remove_others_posts(self):
+        self.client.force_login(self.other_no_perms_user)
+        resp = self.client.post(reverse('blog:post_delete', kwargs={'pk': self.post.pk}))
+        self.assertEqual(resp.status_code, 403)
+        self.assertTrue(Post.objects.filter(pk=self.post.pk).exists())
+
+    def returns_access_denied_if_no_user_is_logged_in(self):
+        resp = self.client.post(reverse('blog:post_delete', kwargs={'pk': self.post.pk}))
+        self.assertEqual(resp.status_code, 403)
+        self.assertTrue(Post.objects.filter(pk=self.post.pk).exists())

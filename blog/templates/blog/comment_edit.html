@@ -1,0 +1,30 @@
+{% extends 'blog/base/page_base.html' %}
+
+{% block title %}
+    Submit Comment
+{% endblock title %}
+    
+{% block content %}
+<div class="form-window">
+    <div>
+        Enter a comment for {post.author.user.username}'s post: {post.title}
+    </div>
+    <form method="post" >
+        {% csrf_token %}
+        <div class="mb-3">
+            <label id="bio" class="form-label" for="{{form.text.name}}">Comment Text</label>
+            <textarea rows="10" class="form-control{%if form.text.errors%} is-invalid{%endif%}" aria-label="With textarea" name="{{form.text.name}}">{% if form.text.value %}{{ form.text.value }}{% endif %}</textarea>
+            <div class="invalid-feedback">
+                {% for error in form.text.errors %}
+                    <div>{{error}}</div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div>
+            <button type="submit" class="btn btn-primary float-end">Submit Comment</button>
+        </div>
+    </form>
+</div>
+{% endblock content %}
+    
