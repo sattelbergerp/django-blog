@@ -1,11 +1,14 @@
 from django.db import models
 from django.contrib.auth.models import Permission, User, Group
+from django.db.models.deletion import CASCADE
 from django.db.models.signals import post_save, post_init, pre_save
 from django.dispatch import receiver
 from django.template.defaultfilters import slugify, truncatechars
 from django.urls import reverse
 from os.path import basename
 from .util import create_group_if_not_exists
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey
 
 class Post(models.Model):
     
@@ -73,8 +76,27 @@ class Comment(models.Model):
     def can_user_delete(self, user):
         return self.commenter == user or user.has_perm('blog.delete_comment') or self.post.author == user.author
 
+    def get_votes(self):
+        if not getattr(self, 'cached_votes', None):
+            self.cached_votes = self.commentvote_set.filter(type='u').count() - self.commentvote_set.filter(type='d').count()
+        return self.cached_votes
+        #return -1234
+
+    def has_voted(self, user, type):
+        return self.commentvote_set.filter(user=user, type=type).exists()
+
     def __str__(self):
         return f'{self.commenter}: {truncatechars(self.text, 100)}'
+
+class CommentVote(models.Model):
+
+    VOTE_TYPE = (
+        ('u', 'Upvote'),
+        ('d', 'Downvote'),
+    )
+    type = models.CharField(max_length=1, choices=VOTE_TYPE, blank=True, null=True)
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
 class Author(models.Model):
     AUTHOR_PERMS = ['modify_own_author', 'create_own_post', 'delete_comments_on_own_post']
@@ -133,3 +155,18 @@ class Tag(models.Model):
     def __str__(self):
         return self.name
         
+class Notification(models.Model):
+    user = models.ForeignKey(User, on_delete=CASCADE)
+    content_type = models.ForeignKey(ContentType, on_delete=CASCADE)
+    object_id = models.PositiveIntegerField()
+    content = GenericForeignKey()
+    seen = models.BooleanField(default=False)
+    created_on = models.DateTimeField(auto_now_add=True)
+
+    TYPE_NEW_COMMENT = 'nc'
+    TYPE_PRIVATE_MESSAGE = 'pm'
+    TYPES = (
+        ('nc', 'New comment'),
+        ('pm', 'Private message'),
+    )
+    type = models.CharField(max_length=2, choices=TYPES)

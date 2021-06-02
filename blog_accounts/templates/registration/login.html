@@ -33,7 +33,7 @@
             <a href="#">Forgot your password</a>
         </div>
         <div>
-            <a href="{% url 'signup' %}">Create a new account</a>
+            <a href="{% url 'signup' %}{% if next %}?next={{ next }}{% endif %}">Create a new account</a>
         </div>
         <input type="hidden" name="next" value="{{ next }}" />
         <div>

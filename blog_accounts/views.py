@@ -14,10 +14,11 @@ def signup(request):
             user = User.objects.create_user(form.cleaned_data['username'], form.cleaned_data['email'], form.cleaned_data['password'])
             user.save()
             login(request, user)
-            return HttpResponseRedirect('/')
+            redirect = request.POST.get('next', '/')
+            return HttpResponseRedirect(redirect if redirect != None else '/')
     else:
        form = SignupForm()
-    return render(request, 'blog_accounts/signup.html', {'form': form})
+    return render(request, 'blog_accounts/signup.html', {'form': form, 'next': request.GET.get('next')})
 
     
 

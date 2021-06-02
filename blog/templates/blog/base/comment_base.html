@@ -2,12 +2,30 @@
 <li>
     <div class="comment border d-flex">
         <div class="comment-votes-container">
-            {% if request.user.is_authenticated %}
-            <i class="bi bi-arrow-up-square"></i>
+            {% if request.user.is_authenticated and request.user != comment.commenter %}
+                <form method="POST" action="{% url 'blog:comment_vote' comment.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="type" value="upvote">
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button class="btn-blank">
+                        <i class="bi bi-arrow-up-square{% if comment|upvoted:request.user %}-fill{% endif %}"></i>
+                    </button>
+                </form>
+            {% else %}
+                <i class="bi bi-arrow-up-square vote-disabled"></i>
             {% endif %}
-            {{comment.votes|intcompact}}
-            {% if request.user.is_authenticated %}
-            <i class="bi bi-arrow-down-square"></i>
+            {{comment.get_votes|intcompact}}
+            {% if request.user.is_authenticated and request.user != comment.commenter %}
+            <form method="POST" action="{% url 'blog:comment_vote' comment.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="type" value="downvote">
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button class="btn-blank">
+                    <i class="bi bi-arrow-down-square{% if comment|downvoted:request.user %}-fill{% endif %}"></i>
+                </button>
+            </form>
+            {% else %}
+                <i class="bi bi-arrow-down-square vote-disabled"></i>
             {% endif %}
         </div>
         <div>

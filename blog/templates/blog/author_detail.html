@@ -1,6 +1,6 @@
 
 {% extends 'blog/base/page_base.html' %}
-
+{% load blog_filters %}
 {% block title %}
     {{author.user.username}}
 {% endblock title %}
@@ -10,9 +10,11 @@
         <div class="clearfix mb-2 mt-2">
             <h3 class="d-inline">{{author.user.username}}</h3>
             <span class="user-controls float-end">
-                {% if author.visible %}
-                    <a class="btn btn-primary" href="{% url 'blog:user_detail' author.slug %}">View profile</a>
+                {% if user|can_edit:author %}
+                    <a class="btn btn-primary" href="{% url 'blog:user_edit' author.slug %}">Edit</a>
                 {% endif %}
+                <a class="btn btn-primary" href="{% url 'blog:user_detail' author.slug %}">View profile</a>
+                
             </span>
         </div>
         

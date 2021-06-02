@@ -1,4 +1,6 @@
-from django.http.response import HttpResponseRedirect
+from django.db.models.expressions import Func
+from django.http.response import HttpResponseRedirect, HttpResponse
+from django.http import Http404
 from django.template.defaultfilters import default
 from django.urls.base import reverse
 from blog.forms import AuthorSettingsForm, UserSettingsForm, PostForm
@@ -16,7 +18,7 @@ from PIL import Image
 from django.core.files.base import ContentFile
 from os.path import join, exists
 from os import remove
-from django.db.models import Count
+from django.db.models import Count, F, Q
 # Create your views here.
 
 class PostIndexView(ListView):
@@ -27,7 +29,10 @@ class PostIndexView(ListView):
 class PostDetailView(View):
     def get(self, request, pk):
         post = get_object_or_404(Post, pk=pk, author__visible=True)
-        comments = post.comment_set.order_by('-votes')[:5]
+        query = post.comment_set.annotate(num_upvotes=Count('commentvote', filter=Q(commentvote__type='u')))
+        query = query.annotate(num_downvotes=Count('commentvote', filter=Q(commentvote__type='d')))
+        query = query.annotate(num_votes=F('num_upvotes') - F('num_downvotes'))
+        comments = query.order_by('-num_votes')[:5]
         return render(request, 'blog/post_detail.html', {'post': post, 'comments': comments, 'comment_count': post.comment_set.count()})
 
 class PostCommentIndexView(ListView):
@@ -49,7 +54,10 @@ class PostCommentIndexView(ListView):
             if sort == 'recent':
                 self.sort_by = 'recent'
                 return self.post.comment_set.order_by('-created_on').all()
-        return self.post.comment_set.order_by('-votes').all()
+        query = self.post.comment_set.annotate(num_upvotes=Count('commentvote', filter=Q(commentvote__type='u')))
+        query = query.annotate(num_downvotes=Count('commentvote', filter=Q(commentvote__type='d')))
+        query = query.annotate(num_votes=F('num_upvotes') - F('num_downvotes'))
+        return query.order_by('-num_votes')
 
 class AuthorDetailView(ListView):
     paginate_by = 20
@@ -180,6 +188,7 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
         post = get_object_or_404(Post, pk=self.kwargs['pk'])
         comment = Comment(post=post, commenter=self.request.user, text=form.cleaned_data['text'])
         comment.save()
+        post.author.user.notification_set.create(content=comment)
         return HttpResponseRedirect(reverse('blog:post_detail', kwargs={'pk': post.pk}))
 
 class CommentEditView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
@@ -256,3 +265,37 @@ class TagDetailView(ListView):
         context = super().get_context_data(**kwargs)
         context['tag'] = self.tag
         return context
+
+def comment_vote(request, pk):
+    if request.method != 'POST':
+        raise Http404()
+    comment = get_object_or_404(Comment, pk=pk)
+    if comment.commenter == request.user:
+        raise PermissionDenied
+    type = request.POST.get('type', None)
+    next = request.POST.get('next', None)
+    if type=='upvote':
+        if comment.has_voted(request.user, 'u'):
+            comment.commentvote_set.filter(user=request.user, type='u').delete()
+        else:
+            comment.commentvote_set.filter(user=request.user, type='d').delete()
+            comment.commentvote_set.create(user=request.user, type='u')
+    if type=='downvote':
+        if comment.has_voted(request.user, 'd'):
+            comment.commentvote_set.filter(user=request.user, type='d').delete()
+        else:
+            comment.commentvote_set.filter(user=request.user, type='u').delete()
+            comment.commentvote_set.create(user=request.user, type='d')
+
+    if next:
+        return HttpResponseRedirect(next)
+    else:
+        return HttpResponse('Voted Ok')
+
+class NotificationIndexView(LoginRequiredMixin, ListView):
+    paginate_by = 20
+    template_name = 'blog/notification_index.html'
+
+    def get_queryset(self):
+        user = self.request.user
+        return user.notification_set.all()

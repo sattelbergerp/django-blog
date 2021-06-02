@@ -80,3 +80,13 @@
     display: inline-block;
     text-overflow: ellipsis;
 }
+
+.vote-disabled {
+    color: #777;
+}
+
+.btn-blank {
+    border: none;
+    outline: none;
+    background: none;
+}

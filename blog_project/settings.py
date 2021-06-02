@@ -17,7 +17,7 @@ from os import environ, path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 #Blog specific settings
-ENFORCE_PASSWORD_VALIDATION = True
+ENFORCE_PASSWORD_VALIDATION = False
 TEST_RESOURCES_PATH = path.join(BASE_DIR, 'test_resources')
 
 # Quick-start development settings - unsuitable for production
@@ -27,7 +27,7 @@ TEST_RESOURCES_PATH = path.join(BASE_DIR, 'test_resources')
 SECRET_KEY = environ['DJANGO_SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = 'DJANGO_DEBUG' in environ and environ['DJANGO_DEBUG'] == 'True'
+DEBUG = environ.get('DJANGO_DEBUG', 'False').lower() == 'true'
 
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
@@ -88,6 +88,7 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
 
 
 # Password validation

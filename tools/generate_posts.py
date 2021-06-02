@@ -10,12 +10,13 @@ from blog.models import Post, Comment, Author, Tag
 from django.contrib.auth.models import User
 from lorem_text import lorem
 from random import randrange
+from math import floor
 
 MEDIA_TARGET = 'media'
 POSTS_IMAGE_TARGET = 'blog_post_header_images'
 
 users = []
-for i in range(175):
+for i in range(2000):
     username=f'test_user_{i}'
     try:
         user = User.objects.get(username=username)
@@ -41,7 +42,7 @@ for i in range(25):
         users.append(user)
 
 tags = []
-for i in range(25):
+for i in range(1000):
     tag_name=f'test_tag_{i}'
     try:
         tag = Tag.objects.get(name=tag_name)
@@ -66,7 +67,7 @@ for i, file in enumerate(files):
 
     if post.tags.all().count() == 0:
         for tag in tags:
-            if randrange(0, 4) == 0:
+            if randrange(0, 25) == 0:
                 post.tags.add(tag)
     
     if post.tags.all().count() == 0:
@@ -75,8 +76,17 @@ for i, file in enumerate(files):
                 post.tags.add(tag)
     
     if post.comment_set.all().count() == 0:
-        for i in range(randrange(10, 50)):
-            comment = Comment(post=post, commenter=users[randrange(0, len(users)-1)], text=lorem.paragraph(), votes=randrange(-10000, 10000))
+        tc = randrange(10, 50)
+        for j in range(tc):
+            comment = Comment(post=post, commenter=users[randrange(0, len(users)-1)], text=lorem.paragraph())
             comment.save()
+            total = randrange(0, 2000)
+            p, lp = 0, -1
+            for k in range(total):
+                p = floor(100.0/(total*tc)*(k+(total*j)))
+                if p != lp:
+                    print(f'\rGenerating posts... ({i+1}/{len(files)}) {p}%',end='')
+                    lp = p
+                comment.commentvote_set.create(user=users[randrange(0, len(users)-1)], type='u' if randrange(0,2)==0 else 'd')
 
 

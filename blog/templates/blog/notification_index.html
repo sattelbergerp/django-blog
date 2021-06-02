@@ -1,0 +1,19 @@
+{% extends 'blog/base/page_base.html' %}
+{% load blog_filters %}
+{% load blog_tags %}
+
+{% block title %}
+    Notifications
+{% endblock title %}
+
+{% block content %}
+    <div class="notification-container mt-2">
+        
+        <ul class="list-group">
+            {% for notification in notification_list %}
+                {% comment %}<li class="list-group-item">{% inline_notification notification %}</li> {% endcomment %}
+                <li class="list-group-item"><strong>{{ notification.get_type_display }}:</strong> {{ notification.content }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock content %}
