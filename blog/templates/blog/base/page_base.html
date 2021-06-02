@@ -1,6 +1,7 @@
 {% load static %}
 {% load blog_filters %}
 {% url 'blog:post_index' as post_index %}
+{% url 'blog:tag_index' as tag_index %}
 
 <!DOCTYPE html>
 <html>
@@ -25,7 +26,9 @@
                         <li class="nav-item">
                             <a class="nav-link{% if request.path == post_index %} active{% endif %}" href="{{post_index}}">Posts</a>
                         </li>
-                        
+                        <li class="nav-item">
+                            <a class="nav-link{% if request.path == tag_index %} active{% endif %}" href="{{tag_index}}">Tags</a>
+                        </li>
                     </ul>
                     <ul class="navbar-nav mb-2 mb-lg-0">
                         <li class="nav-item dropdown ms-auto">

@@ -16,6 +16,7 @@ from PIL import Image
 from django.core.files.base import ContentFile
 from os.path import join, exists
 from os import remove
+from django.db.models import Count
 # Create your views here.
 
 class PostIndexView(ListView):
@@ -222,3 +223,36 @@ class UserDetailView(ListView):
         self.user = get_object_or_404(Author, slug=self.kwargs['slug']).user
         
         return self.user.comment_set.order_by('-created_on').all()
+
+class TagIndexView(ListView):
+    model = Tag
+    paginate_by = 100
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['sort_by'] = self.sort_by
+        return context
+
+    def get_queryset(self):
+        query = Tag.objects.all().annotate(num_posts=Count('post')).filter(num_posts__gt=0)
+        self.sort_by = self.request.GET.get('sort')
+        if self.sort_by == 'least_posts':
+            return query.order_by('num_posts')
+        elif self.sort_by == 'name':
+            return query.order_by('name')
+        else:
+            self.sort_by = 'most_posts'
+            return query.order_by('-num_posts')
+
+class TagDetailView(ListView):
+    paginate_by = 20
+    template_name = 'blog/tag_detail.html'
+
+    def get_queryset(self):
+        self.tag = get_object_or_404(Tag.objects, slug=self.kwargs['slug'])
+        return self.tag.post_set.all()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tag'] = self.tag
+        return context

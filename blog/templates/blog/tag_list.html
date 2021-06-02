@@ -1,0 +1,28 @@
+{% extends 'blog/base/page_base.html' %}
+{% load blog_tags %}
+
+{% block title %}
+    Tags
+{% endblock title %}
+
+{% block content %}
+    <div class="mt-2 clearfix">
+        <h3 class="d-inline mt-2">Tags</h3>
+        <span class="user-controls float-end">
+            <div class="btn-group">
+                <a href="{% current_url 'sort' 'most_posts' %}" class="btn btn-primary{% if sort_by == 'most_posts' %} active {% endif %}" aria-current="page">Most Posts</a>
+                <a href="{% current_url 'sort' 'least_posts' %}" class="btn btn-primary{% if sort_by == 'least_posts' %} active {% endif %}" aria-current="page">Least Posts</a>
+                <a href="{% current_url 'sort' 'name' %}" class="btn btn-primary{% if sort_by == 'name' %} active {% endif %}" aria-current="page">A-Z</a>
+              </div>
+        </span>
+    </div>
+    <div class="tags-list mt-2">
+        {% for tag in tag_list %}
+            <div class="tags-list-item">
+                <a href="{% url 'blog:tag_detail' tag.slug %}">{{ tag }}</a>
+                ({{ tag.post_set.all.count }})
+            </div>
+        {% endfor %}
+    </div>
+    {% include 'blog/base/pagination_base.html' %}
+{% endblock content %}

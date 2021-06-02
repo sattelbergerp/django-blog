@@ -1,0 +1,15 @@
+{% extends 'blog/base/page_base.html' %}
+
+{% block title %}
+    {{tag.name}}
+{% endblock title %}
+
+{% block content %}
+    <div class="">
+        <div class="mb-2 mt-2">
+            <h3 class="d-inline">{{tag.name}}</h3>
+        </div>
+        
+    </div>
+    {% include 'blog/base/post_list_base.html' %}
+{% endblock content %}

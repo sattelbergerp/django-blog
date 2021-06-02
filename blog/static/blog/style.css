@@ -72,3 +72,11 @@
     justify-content: center;
     margin-right: 5px;
 }
+
+.tags-list-item {
+    padding: 2px;
+    width: 100%;
+    max-width: 400px;
+    display: inline-block;
+    text-overflow: ellipsis;
+}

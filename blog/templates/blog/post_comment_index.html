@@ -1,4 +1,5 @@
 {% extends 'blog/base/page_base.html' %}
+{% load blog_tags %}
 
 {% block title %}
     Posts Comments
@@ -14,8 +15,8 @@
                     <a class="btn btn-primary" href="{% url 'blog:comment_create' post.id %}">Leave a comment</a>
                 {% endif %}
                 <div class="btn-group">
-                    <a href="{{ request.path }}?sort=top&page={{ self.page_obj.number }}" class="btn btn-primary{% if sort_by == 'top' %} active {% endif %}" aria-current="page">Top</a>
-                    <a href="{{ request.path }}?sort=recent&page={{ self.page_obj.number }}" class="btn btn-primary{% if sort_by == 'recent' %} active {% endif %}" aria-current="page">Recent</a>
+                    <a href="{% current_url 'sort' 'top' %}" class="btn btn-primary{% if sort_by == 'top' %} active {% endif %}" aria-current="page">Top</a>
+                    <a href="{% current_url 'sort' 'recent' %}" class="btn btn-primary{% if sort_by == 'recent' %} active {% endif %}" aria-current="page">Recent</a>
                   </div>
             </span>
         </div>

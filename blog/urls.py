@@ -13,7 +13,9 @@ urlpatterns = [
     path('posts/<int:pk>/comments/new', views.CommentCreateView.as_view(), name='comment_create'),
     path('comments/<int:pk>/edit', views.CommentEditView.as_view(), name='comment_edit'),
     path('comments/<int:pk>/delete', views.CommentDeleteView.as_view(), name='comment_delete'),
-    path('author/<slug:slug>/', views.AuthorDetailView.as_view(), name='author_detail'),
-    path('user/<slug:slug>/edit', views.user_edit_view, name='user_edit'),
-    path('user/<slug:slug>/', views.UserDetailView.as_view(), name='user_detail'),
+    path('authors/<slug:slug>/', views.AuthorDetailView.as_view(), name='author_detail'),
+    path('users/<slug:slug>/edit', views.user_edit_view, name='user_edit'),
+    path('users/<slug:slug>/', views.UserDetailView.as_view(), name='user_detail'),
+    path('tags/', views.TagIndexView.as_view(), name='tag_index'),
+    path('tags/<slug:slug>/', views.TagDetailView.as_view(), name='tag_detail'),
 ]
