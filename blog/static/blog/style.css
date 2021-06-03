@@ -90,3 +90,7 @@
     outline: none;
     background: none;
 }
+
+.comment-notification-unseen {
+    font-weight: bold;
+}

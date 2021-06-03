@@ -12,7 +12,11 @@
         </div>
         <span class="float-end">
             
-            <form method="post">{% csrf_token %}
+            <form method="post" action="{% url 'blog:comment_delete' comment.id %}">
+                {% csrf_token %}
+                {% if next %}<input type="hidden" name="next" value="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% endif %}" />{% endif %}
+                
+                <input type="hidden" name="next" value="{{ next }}" />
                 <input type="submit" class="btn btn-danger" value="Delete">
                 <a class="btn btn-primary" href="{% url 'blog:post_detail' comment.post.pk %}">Cancel</a>
             </form>

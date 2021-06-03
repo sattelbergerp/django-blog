@@ -8,6 +8,7 @@
 <div class="form-window form-window-wide">
     <form method="post" >
         {% csrf_token %}
+        {% if next %}<input type="hidden" name="next" value="{{ next|urlencode }}" />{% endif %}
         <div class="mb-3">
             <label id="bio" class="form-label" for="{{form.text.name}}">
                 {% if comment %} Update your {% else %} Enter a {% endif %}

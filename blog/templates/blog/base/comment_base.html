@@ -32,8 +32,8 @@
             <div class="comment-header">
                 By <a href="{% url 'blog:user_detail' comment.commenter.author.slug %}">{{comment.commenter.username}}</a> on {{comment.created_on}}
                 <span>
-                    {% if user|can_edit:comment %}<a href="{% url 'blog:comment_edit' comment.pk %}">Edit</a>{% endif %}
-                    {% if user|can_delete:comment %}<a href="{% url 'blog:comment_delete' comment.pk %}"> Delete</a>{% endif %}
+                    {% if user|can_edit:comment %}<a href="{% url 'blog:comment_edit' comment.pk %}?next={{ request.get_full_path|urlencode }}">Edit</a>{% endif %}
+                    {% if user|can_delete:comment %}<a href="{% url 'blog:comment_delete' comment.pk %}?next={{ request.get_full_path|urlencode }}"> Delete</a>{% endif %}
                 </span>
             </div>
             <div class="comment-text">

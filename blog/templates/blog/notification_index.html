@@ -8,12 +8,14 @@
 
 {% block content %}
     <div class="notification-container mt-2">
-        
         <ul class="list-group">
             {% for notification in notification_list %}
-                {% comment %}<li class="list-group-item">{% inline_notification notification %}</li> {% endcomment %}
-                <li class="list-group-item"><strong>{{ notification.get_type_display }}:</strong> {{ notification.content }}</li>
+                <li class="list-group-item">{% inline_notification notification %}</li>
             {% endfor %}
         </ul>
     </div>
+    <div class="mt-2">
+        {% include 'blog/base/pagination_base.html' %}
+    </div>
+    
 {% endblock content %}

@@ -170,3 +170,6 @@ class Notification(models.Model):
         ('pm', 'Private message'),
     )
     type = models.CharField(max_length=2, choices=TYPES)
+
+    class Meta:
+        ordering = ['-created_on']

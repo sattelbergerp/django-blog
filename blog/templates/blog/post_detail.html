@@ -49,7 +49,7 @@
                 <span>
                     <a class="btn btn-primary" href="{% url 'blog:post_comment_index' post.id %}">View all comments ({{comment_count}})</a>
                     {% if user.is_authenticated %}
-                        <a class="btn btn-primary" href="{% url 'blog:comment_create' post.id %}">Leave a comment</a>
+                        <a class="btn btn-primary" href="{% url 'blog:comment_create' post.id %}?next={{ request.get_full_path|urlencode }}">Leave a comment</a>
                     {% endif %}                    
                 </span>
                 <span class="float-end">

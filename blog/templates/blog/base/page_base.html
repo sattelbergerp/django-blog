@@ -1,8 +1,10 @@
 {% load static %}
 {% load blog_filters %}
 {% load blog_tags %}
+{% load notification_tags %}
 {% url 'blog:post_index' as post_index %}
 {% url 'blog:tag_index' as tag_index %}
+{% get_unread_notification_count user as unread_notification_count %}
 
 <!DOCTYPE html>
 <html>
@@ -37,7 +39,8 @@
                         <li class="nav-item dropdown ms-auto">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 {% if user.is_authenticated %}
-                                    {{user.username}}
+                                    {{user.username}} 
+                                    {% if unread_notification_count %}<span class="badge rounded-pill bg-primary">{{unread_notification_count}}</span>{% endif %}
                                 {% else %}
                                     Login / Signup
                                 {% endif %}
@@ -51,7 +54,14 @@
                                         <li><a class="dropdown-item" href="{% url 'blog:author_detail' slug=user.author.slug %}">Blog</a></li>
                                     {% endif %}
                                     <li><a class="dropdown-item" href="{% url 'blog:user_detail' slug=user.author.slug %}">Profile</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'blog:notification_index' %}">Notifications</a></li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'blog:notification_index' %}">
+                                            Notifications 
+                                            {% if unread_notification_count %}
+                                                <span class="badge rounded-pill bg-primary float-end">{{unread_notification_count}}</span>
+                                            {% endif %}
+                                        </a>
+                                    </li>
                                     <li><a class="dropdown-item" href="{% url 'blog:user_edit' slug=user.author.slug %}">Settings</a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" href="{% url 'logout' %}?next={{request.get_full_path|urlencode}}">Logout</a></li>

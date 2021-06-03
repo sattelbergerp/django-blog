@@ -1,0 +1,6 @@
+<div>
+    <div class="comment-notification{% if not notification.seen %} comment-notification-unseen{% endif %}">
+        <a href="{% url 'blog:user_detail' comment.commenter %}">{{comment.commenter.username}}</a> left a comment on your post <a href="{{comment.post.get_absolute_url}}">{{comment.post.title|truncatechars:200}}</a>:
+    </div>
+    <div>{{comment.text}}</div>
+</div>

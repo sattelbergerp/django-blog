@@ -182,6 +182,7 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
         context['post'] = get_object_or_404(Post, pk=self.kwargs['pk'])
+        context['next'] = self.request.GET.get('next', None)
         return context
 
     def form_valid(self, form):
@@ -189,7 +190,8 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
         comment = Comment(post=post, commenter=self.request.user, text=form.cleaned_data['text'])
         comment.save()
         post.author.user.notification_set.create(content=comment)
-        return HttpResponseRedirect(reverse('blog:post_detail', kwargs={'pk': post.pk}))
+        next = self.request.POST.get('next', None)
+        return HttpResponseRedirect(next if next else '/')
 
 class CommentEditView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Comment
@@ -201,22 +203,31 @@ class CommentEditView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
         context['post'] = self.get_object().post
+        context['next'] = self.request.GET.get('next', None)
         return context
 
     def form_valid(self, form):
         comment = self.get_object()
         comment.text=form.cleaned_data['text']
         comment.save()
-        return HttpResponseRedirect(reverse('blog:post_detail', kwargs={'pk': comment.post.pk}))
+        next = self.request.POST.get('next', None)
+        return HttpResponseRedirect(next if next else '/')
 
 class CommentDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Comment
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['next'] = self.request.GET.get('next', None)
+        return context
 
     def test_func(self):
         return self.get_object().can_user_delete(self.request.user)
 
     def get_success_url(self, *args, **kwargs):
-        return reverse('blog:post_index')
+        next = self.request.POST.get('next', None)
+        print(f'Redirect to: {next}')
+        return next if next else '/'
 
 class UserDetailView(ListView):
     paginate_by = 20
@@ -288,13 +299,22 @@ def comment_vote(request, pk):
             comment.commentvote_set.create(user=request.user, type='d')
 
     if next:
-        return HttpResponseRedirect(next)
+        return HttpResponseRedirect(next if next else '/')
     else:
         return HttpResponse('Voted Ok')
 
 class NotificationIndexView(LoginRequiredMixin, ListView):
     paginate_by = 20
     template_name = 'blog/notification_index.html'
+
+    def get(self, request):
+        user = request.user
+        resp = super().get(request).render()
+        for notification in user.notification_set.all():
+            if not notification.seen:
+                notification.seen = True
+                notification.save()
+        return resp
 
     def get_queryset(self):
         user = self.request.user
