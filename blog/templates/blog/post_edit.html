@@ -1,7 +1,11 @@
 {% extends 'blog/base/page_base.html' %}
 
 {% block title %}
-    Create/Edit Post
+    {% if post %}
+        Edit - {{post.title}}
+    {% else %}
+        New Post
+    {% endif %}
 {% endblock title %}
     
 {% block content %}

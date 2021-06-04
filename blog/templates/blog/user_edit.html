@@ -2,7 +2,11 @@
 {% load blog_filters %}
 
 {% block title %}
-    Settings
+    {% if author.user == user %}
+        Settings
+    {% else %}
+        {{ author.user.username }} - Settings
+    {% endif %}
 {% endblock title %}
     
 {% block content %}

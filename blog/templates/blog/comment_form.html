@@ -1,7 +1,7 @@
 {% extends 'blog/base/page_base.html' %}
 
 {% block title %}
-    Submit Comment
+    {% if comment %}Edit{% else %}Submit{% endif %} comment - {{post.title}}
 {% endblock title %}
     
 {% block content %}
@@ -24,7 +24,7 @@
         </div>
         
         <div>
-            <button type="submit" class="btn btn-primary float-end">Submit Comment</button>
+            <button type="submit" class="btn btn-primary float-end">{% if comment %}Edit{% else %}Submit{% endif %}</button>
         </div>
     </form>
 </div>
