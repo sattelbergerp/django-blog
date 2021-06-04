@@ -1,6 +1,15 @@
 <div>
     <div class="comment-notification{% if not notification.seen %} comment-notification-unseen{% endif %}">
-        <a href="{% url 'blog:user_detail' comment.commenter %}">{{comment.commenter.username}}</a> left a comment on your post <a href="{{comment.post.get_absolute_url}}">{{comment.post.title|truncatechars:200}}</a>:
+        <a href="{% url 'blog:user_detail' comment.commenter %}">{{comment.commenter.username}}</a>
+         left a comment on your post
+          <a href="{{comment.post.get_absolute_url}}">{{comment.post.title|truncatechars:200}}</a>:
+        <span class="float-end text-muted">
+            {{notification.created_on|timesince}} ago
+            <form class="d-inline" method="POST" action="{% url 'blog:notification_delete' notification.id %}">
+                {% csrf_token %}
+                <button type="submit" title="Dismiss" class="btn-blank"><i class="bi bi-x-lg ms-2"></i></button>
+            </form>
+        </span>
     </div>
     <div>{{comment.text}}</div>
 </div>

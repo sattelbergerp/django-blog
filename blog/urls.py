@@ -18,6 +18,7 @@ urlpatterns = [
     path('users/<slug:slug>/edit', views.user_edit_view, name='user_edit'),
     path('users/<slug:slug>/', views.UserDetailView.as_view(), name='user_detail'),
     path('notifications/', views.NotificationIndexView.as_view(), name='notification_index'),
+    path('notifications/<int:pk>/delete', views.NotificationDeleteView.as_view(), name='notification_delete'),
     path('tags/', views.TagIndexView.as_view(), name='tag_index'),
     path('tags/<slug:slug>/', views.TagDetailView.as_view(), name='tag_detail'),
 ]

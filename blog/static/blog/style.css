@@ -89,6 +89,8 @@
     border: none;
     outline: none;
     background: none;
+    margin: 0px;
+    padding: 0px;
 }
 
 .comment-notification-unseen {

@@ -1,6 +1,5 @@
 {% extends 'blog/base/page_base.html' %}
-{% load blog_filters %}
-{% load blog_tags %}
+{% load notification_tags %}
 
 {% block title %}
     Notifications
@@ -8,11 +7,15 @@
 
 {% block content %}
     <div class="notification-container mt-2">
-        <ul class="list-group">
-            {% for notification in notification_list %}
-                <li class="list-group-item">{% inline_notification notification %}</li>
-            {% endfor %}
-        </ul>
+        {% if notification_list %}
+            <ul class="list-group">
+                {% for notification in notification_list %}
+                    <li class="list-group-item">{% inline_notification notification %}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="text-muted text-center">No notifications</div>
+        {% endif %}
     </div>
     <div class="mt-2">
         {% include 'blog/base/pagination_base.html' %}

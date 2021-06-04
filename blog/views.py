@@ -7,7 +7,7 @@ from blog.forms import AuthorSettingsForm, UserSettingsForm, PostForm
 from django.shortcuts import get_object_or_404, render
 from django.views.generic import ListView, DetailView, DeleteView, CreateView, UpdateView
 from django.views import View
-from .models import Post, Author, Comment, Tag
+from .models import Notification, Post, Author, Comment, Tag
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth import login
@@ -226,7 +226,6 @@ class CommentDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
     def get_success_url(self, *args, **kwargs):
         next = self.request.POST.get('next', None)
-        print(f'Redirect to: {next}')
         return next if next else '/'
 
 class UserDetailView(ListView):
@@ -319,3 +318,15 @@ class NotificationIndexView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         user = self.request.user
         return user.notification_set.all()
+
+class NotificationDeleteView(DeleteView):
+    model = Notification
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['next'] = self.request.GET.get('next', None)
+        return context
+
+    def get_success_url(self, *args, **kwargs):
+        next = self.request.POST.get('next', None)
+        return next if next else reverse('blog:notification_index')

@@ -1,22 +1,23 @@
 {% extends 'blog/base/page_base.html' %}
+{% load notification_tags %}
 
 {% block title %}
-    Comment - Delete
+    Notification - Delete
 {% endblock title %}
 
 {% block content %}
     <div>
         <div>
-            {% include 'blog/base/comment_base.html'%}
+            {% inline_notification notification %}
         </div>
         <span class="float-end">
             
-            <form method="post" action="{% url 'blog:comment_delete' comment.id %}">
+            <form method="post" action="{% url 'blog:notification_delete' notification.id %}">
                 {% csrf_token %}
                 {% if next %}<input type="hidden" name="next" value="{{ next|urlencode }}" />{% endif %}
                 
                 <input type="submit" class="btn btn-danger" value="Delete">
-                <a class="btn btn-primary" href="{{ next|urlencode }}">Cancel</a>
+                <a class="btn btn-primary" href="{% if next %}{{ next|urlencode }}{% else %}{% url 'blog:notification_index' %}{% endif %}">Cancel</a>
             </form>
             
         </span>
