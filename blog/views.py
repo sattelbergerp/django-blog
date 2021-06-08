@@ -1,3 +1,4 @@
+from notifications.models import NotificationType
 from django.db.models.expressions import Func
 from django.http.response import HttpResponseRedirect, HttpResponse
 from django.http import Http404
@@ -7,7 +8,8 @@ from blog.forms import AuthorSettingsForm, UserSettingsForm, PostForm
 from django.shortcuts import get_object_or_404, render
 from django.views.generic import ListView, DetailView, DeleteView, CreateView, UpdateView
 from django.views import View
-from .models import Notification, Post, Author, Comment, Tag
+from .models import Post, Author, Comment, Tag
+#from notifications.models import Notification
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth import login
@@ -189,7 +191,7 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
         post = get_object_or_404(Post, pk=self.kwargs['pk'])
         comment = Comment(post=post, commenter=self.request.user, text=form.cleaned_data['text'])
         comment.save()
-        post.author.user.notification_set.create(content=comment)
+        post.author.user.notification_set.create(content=comment, type=NotificationType.objects.get(name='new_comment_on_post'))
         next = self.request.POST.get('next', None)
         return HttpResponseRedirect(next if next else '/')
 
@@ -301,32 +303,3 @@ def comment_vote(request, pk):
         return HttpResponseRedirect(next if next else '/')
     else:
         return HttpResponse('Voted Ok')
-
-class NotificationIndexView(LoginRequiredMixin, ListView):
-    paginate_by = 20
-    template_name = 'blog/notification_index.html'
-
-    def get(self, request):
-        user = request.user
-        resp = super().get(request).render()
-        for notification in user.notification_set.all():
-            if not notification.seen:
-                notification.seen = True
-                notification.save()
-        return resp
-
-    def get_queryset(self):
-        user = self.request.user
-        return user.notification_set.all()
-
-class NotificationDeleteView(DeleteView):
-    model = Notification
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['next'] = self.request.GET.get('next', None)
-        return context
-
-    def get_success_url(self, *args, **kwargs):
-        next = self.request.POST.get('next', None)
-        return next if next else reverse('blog:notification_index')

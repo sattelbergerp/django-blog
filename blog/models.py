@@ -10,6 +10,7 @@ from .util import create_group_if_not_exists
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 
+
 class Post(models.Model):
     
     title = models.CharField(max_length=255)
@@ -68,6 +69,11 @@ class Comment(models.Model):
     class Meta:
         permissions = [
             ("delete_comments_on_own_post", "Can delete any comment left on a post they created"),
+        ]
+        
+    class NotificationsMeta:
+        notifications = [
+            ('new_comment_on_post', 'New reply to post', 'When someone submits a comment one of your posts')
         ]
 
     def can_user_edit(self, user):
@@ -155,21 +161,3 @@ class Tag(models.Model):
     def __str__(self):
         return self.name
         
-class Notification(models.Model):
-    user = models.ForeignKey(User, on_delete=CASCADE)
-    content_type = models.ForeignKey(ContentType, on_delete=CASCADE)
-    object_id = models.PositiveIntegerField()
-    content = GenericForeignKey()
-    seen = models.BooleanField(default=False)
-    created_on = models.DateTimeField(auto_now_add=True)
-
-    TYPE_NEW_COMMENT = 'nc'
-    TYPE_PRIVATE_MESSAGE = 'pm'
-    TYPES = (
-        ('nc', 'New comment'),
-        ('pm', 'Private message'),
-    )
-    type = models.CharField(max_length=2, choices=TYPES)
-
-    class Meta:
-        ordering = ['-created_on']

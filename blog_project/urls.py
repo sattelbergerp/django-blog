@@ -22,6 +22,7 @@ from django.conf import settings
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('blog/', include('blog.urls')),
+    path('blog/', include('notifications.urls')),
     path('accounts/', include('blog_accounts.urls')),
     path('', RedirectView.as_view(url='/blog/posts')),
 ]

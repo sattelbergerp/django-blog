@@ -55,7 +55,7 @@
                                     {% endif %}
                                     <li><a class="dropdown-item" href="{% url 'blog:user_detail' slug=user.author.slug %}">Profile</a></li>
                                     <li>
-                                        <a class="dropdown-item" href="{% url 'blog:notification_index' %}">
+                                        <a class="dropdown-item" href="{% url 'notifications:notification_index' %}">
                                             Notifications 
                                             {% if unread_notification_count %}
                                                 <span class="badge rounded-pill bg-primary float-end">{{unread_notification_count}}</span>
