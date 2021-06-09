@@ -19,6 +19,9 @@ class Notification(models.Model):
     class Meta:
         ordering = ['-created_on']
 
+    def __str__(self):
+        return str(self.content)
+
 class NotificationType(models.Model):
     name = models.CharField(max_length=50, unique=True)
     label = models.CharField(max_length=50)
@@ -30,6 +33,9 @@ class NotificationType(models.Model):
         except NotificationType.DoesNotExist:
             create_notification_types()
             return NotificationType.objects.get(name=name)
+
+    def __str__(self):
+        return f'label'
 
 class PrivateMessage(models.Model):
     sender = models.ForeignKey(User, blank=True, null=True, on_delete=CASCADE, related_name='user_sender')
@@ -55,5 +61,8 @@ class PrivateMessage(models.Model):
 
     def get_receiver_name(self):
         return self.receiver.username
+
+    def __str__(self):
+        return f'text'
 
     

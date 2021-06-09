@@ -6,6 +6,20 @@
 {% endblock title %}
 
 {% block content %}
+    <div class="mb-2 mt-2">
+        <form method="GET">
+
+            {% for notificationtype in notificationtype_list %}
+                <div>
+                    <input type="checkbox" id="{{notificationtype.name}}" name="{{notificationtype.name}}" {% if notificationtype in included_notificationtypes %}checked{% endif %}>
+                    <label for="{{notificationtype.name}}">{{notificationtype.label}}</label>
+                    
+                </div>
+            {% endfor %}
+
+            <button class="btn btn-primary" type="submit">Filter</button>
+        </form>
+    </div>
     <div class="notification-container mt-2">
         {% if notification_list %}
             <ul class="list-group">

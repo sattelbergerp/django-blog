@@ -33,14 +33,13 @@ class NotificationIndexViewTests(TestCase):
         self.notification_type_one = NotificationType.objects.create(name=f'notification_type_1')
         self.notification_type_two = NotificationType.objects.create(name=f'notification_type_2')
         self.sender = User.objects.create(username='sender_username', password='test')
-        self.other_sender = User.objects.create(username='other_sender_username', password='test')
         self.receiver = User.objects.create(username='reciver_username', password='test')
         self.messages = [PrivateMessage.objects.create(text=f'receiver_test_message_{i}', sender=self.sender, receiver=self.receiver) for i in range(5)]
         self.sender_messages = [PrivateMessage.objects.create(text=f'sender_test_message_{i}', sender=self.receiver, receiver=self.sender) for i in range(5)]
         self.notifications = [Notification.objects.create(content=message, user=self.receiver, type=NotificationType.get(name='private_message')) for message in self.messages]
         self.sender_notifications = [Notification.objects.create(content=message, user=self.sender, type=NotificationType.get(name='private_message')) for message in self.sender_messages]
-        self.type_one_notifications = [Notification.objects.create(content=message, user=self.other_sender, type=self.notification_type_one) for message in self.sender_messages]
-        self.type_two_notifications = [Notification.objects.create(content=message, user=self.other_sender, type=self.notification_type_one) for message in self.sender_messages]
+        self.type_one_notifications = [Notification.objects.create(content=message, user=self.sender, type=self.notification_type_one) for message in self.sender_messages]
+        self.type_two_notifications = [Notification.objects.create(content=message, user=self.sender, type=self.notification_type_two) for message in self.sender_messages]
 
     def test_notifications_index_returns_notifications_for_user(self):
         self.client.force_login(self.receiver)
@@ -57,6 +56,17 @@ class NotificationIndexViewTests(TestCase):
             self.assertNotIn(notification, resp.context['notification_list'])
         for notification in self.sender_notifications:
             self.assertIn(notification, resp.context['notification_list'])
+
+    def test_notification_index_filters_by_notification_type(self):
+        self.client.force_login(self.sender)
+        resp = self.client.get(reverse('notifications:notification_index'), data={'notification_type_1': 'on', 'notification_type_2': 'on'})
+        
+        for notification in self.type_one_notifications:
+            self.assertIn(notification, resp.context['notification_list'])
+        for notification in self.type_two_notifications:
+            self.assertIn(notification, resp.context['notification_list'])
+        for notification in self.sender_notifications:
+            self.assertNotIn(notification, resp.context['notification_list'])
 
 class NotificationDeleteViewTest(TestCase):
 
