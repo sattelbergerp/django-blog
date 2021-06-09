@@ -1,8 +1,11 @@
 <div>
     <div class="comment-notification{% if not notification.seen %} comment-notification-unseen{% endif %}">
-        <a href="{% url 'blog:user_detail' comment.commenter.author.slug %}">{{comment.commenter.username}}</a>
-         left a comment on your post
-          <a href="{{comment.post.get_absolute_url}}">{{comment.post.title|truncatechars:200}}</a>:
+        New message from 
+        {% if privatemessage.is_system_message %}
+            {{privatemessage.get_sender_name}}
+        {% else %}
+            <a href="{% url 'blog:user_detail' privatemessage.sender.author.slug %}">{{privatemessage.get_sender_name}}</a>
+        {% endif %}
         <span class="float-end text-muted">
             {{notification.created_on|timesince}} ago
             <form class="d-inline" method="POST" action="{% url 'notifications:notification_delete' notification.id %}">
@@ -11,5 +14,5 @@
             </form>
         </span>
     </div>
-    <div>{{comment.text}}</div>
+    <div>{{privatemessage.text|truncatechars:250}}</div>
 </div>

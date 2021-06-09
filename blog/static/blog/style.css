@@ -96,3 +96,21 @@
 .comment-notification-unseen {
     font-weight: bold;
 }
+
+.message{
+    border-radius: 25px;
+    min-width: 20%;
+    max-width: 80%;
+}
+
+.message.message-sent{
+    float: right;
+}
+
+.message.message-sent .message-header{
+    float: right;
+}
+
+.message.message-reply{
+    float: left;
+}

@@ -1,0 +1,48 @@
+{% extends 'blog/base/page_base.html' %}
+
+{% block title %}
+    Private Messages
+{% endblock title %}
+
+{% block content %}
+
+    <div class='mt-2'>
+        {% if profile_user %}
+            <h3>{{profile_user.username}}</h3>
+        {% else %}
+            system
+        {% endif %}
+    </div>
+    
+    <div class="border p-2">
+        {% if privatemessage_list %}
+            {% for message in privatemessage_list reversed %}
+                <div class="clearfix">
+                    <div class="message{% if message.sender == user %} message-sent{% else %} message-reply{% endif %}">
+                        <div class="clearfix">
+                            <span class="text-muted message-header">{{message.created_on|timesince}} ago</span>
+                        </div>
+                        <div class="message-body border p-1 m-1">{{message.text}}</div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-muted text-center">No messages yet.</div>
+        {% endif %}
+    </div>
+    {% if profile_user %}
+        <form class="mt-3" method="POST" action="{% url 'notifications:privatemessage_create' profile_user.id %}">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label id="content" class="form-label" for="text">Message text</label>
+                <textarea rows="2" class="form-control" aria-label="With textarea" name="text"></textarea>
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary float-end">Send</button>
+            </div>
+        </form>
+    {% endif %}
+    <div class="mt-2">
+        {% include 'blog/base/pagination_base.html' %}
+    </div>
+{% endblock content %}

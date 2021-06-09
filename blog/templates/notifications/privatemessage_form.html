@@ -1,0 +1,30 @@
+{% extends 'blog/base/page_base.html' %}
+
+{% block title %}
+    Private Messages
+{% endblock title %}
+
+{% block content %}
+    <div class='mt-2'>
+        <h3>Message {{profile_user.username}}</h3>
+    </div>
+    
+    <form method="POST" action="{% url 'notifications:privatemessage_create' profile_user.id %}">
+        {% csrf_token %}
+        {% for error in form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">{{error}}</div>
+        {% endfor %}
+        <div class="mb-3">
+            <label id="content" class="form-label" for="{{form.text.name}}">Message text</label>
+            <textarea rows="2" class="form-control{%if form.text.errors%} is-invalid{%endif%}" aria-label="With textarea" name="{{form.text.name}}">{% if form.text.value %}{{ form.text.value }}{% endif %}</textarea>
+            <div class="invalid-feedback">
+                {% for error in form.text.errors %}
+                    <div>{{error}}</div>
+                {% endfor %}
+            </div>
+        </div>
+        <div>
+            <button type="submit" class="btn btn-primary float-end">Send</button>
+        </div>
+    </form>
+{% endblock content %}

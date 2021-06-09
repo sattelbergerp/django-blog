@@ -31,9 +31,10 @@ class InlineNotificationNode(template.Node):
                 raise ValueError(f'Expected Notification got {type(object)}')
             content = notification.content
             content_class = notification.content_type.model_class()
+            app_label = content._meta.app_label
             meta = getattr(content_class, 'NotificationsMeta', None)
             content_type_name = content_class.__name__.lower()
-            notifcation_inline_template = getattr(meta, 'notifcation_inline_template', join(meta.app_label, f'{content_type_name}_notification_inline.html'))
+            notifcation_inline_template = getattr(meta, 'notifcation_inline_template', join(app_label, f'{content_type_name}_notification_inline.html'))
             notifcation_inline_context_name = getattr(meta, 'notifcation_inline_context_name', content_type_name)
             new_context = {}
             new_context[notifcation_inline_context_name] = content
