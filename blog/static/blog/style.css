@@ -114,3 +114,8 @@
 .message.message-reply{
     float: left;
 }
+
+.link-icon-btn{
+    color:black;
+    text-decoration: none;
+}

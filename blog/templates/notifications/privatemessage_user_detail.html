@@ -31,11 +31,7 @@
                             <span class="text-muted message-header">
                                 {{message.created_on|timesince}} ago
                                 {% if message.sender == user %}
-                                <form class="d-inline" method="POST" action="{% url 'notifications:privatemessage_delete' message.id %}">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                    <button type="submit" title="Dismiss" class="btn-blank"><i class="bi bi-x-lg ms-2"></i></button>
-                                </form>
+                                    <a href="{% url 'notifications:privatemessage_delete' message.id %}?next={{ request.get_full_path }}" title="Delete"><i class="bi bi-trash ms-2 link-icon-btn"></i></a>
                                 {% endif %}
                             </span>
                         </div>

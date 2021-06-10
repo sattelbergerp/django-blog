@@ -1,0 +1,28 @@
+{% extends 'blog/base/page_base.html' %}
+
+{% block title %}
+    Delete - {{privatemessage.text}}
+{% endblock title %}
+
+{% block content %}
+    <div class="post-container">
+        <div class="post-content">
+            <div>
+                <h4>Delete message to {{privatemessage.get_receiver_name}}</h4>
+                <div>{{privatemessage.text}}</div>
+            </div>
+        </div>
+        <div>
+            <div>
+                <span class="float-end">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="submit" class="btn btn-danger" value="Delete">
+                        <input type="hidden" name="next" value="{{ next }}">
+                        <a class="btn btn-primary" href="{{ privatemessage.get_receiver_messages_url }}">Cancel</a>
+                    </form>
+                </span>
+            </div>   
+        </div>
+    </div> 
+{% endblock content %}
