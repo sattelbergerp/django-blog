@@ -6,33 +6,40 @@
 {% endblock title %}
 
 {% block content %}
-    <div class="mb-2 mt-2">
-        <form method="GET">
+    <div class="row">
+    <div class="col-md-auto">
+        <div class="mb-2 mt-2">
+            <form method="GET">
+                <h4>Filters</h4>
+                {% for notificationtype in notificationtype_list %}
+                    <div>
+                        <input type="checkbox" id="{{notificationtype.name}}" name="{{notificationtype.name}}" {% if notificationtype in included_notificationtypes %}checked{% endif %}>
+                        <label for="{{notificationtype.name}}">{{notificationtype.label}}</label>
 
-            {% for notificationtype in notificationtype_list %}
-                <div>
-                    <input type="checkbox" id="{{notificationtype.name}}" name="{{notificationtype.name}}" {% if notificationtype in included_notificationtypes %}checked{% endif %}>
-                    <label for="{{notificationtype.name}}">{{notificationtype.label}}</label>
-                    
-                </div>
-            {% endfor %}
-
-            <button class="btn btn-primary" type="submit">Filter</button>
-        </form>
-    </div>
-    <div class="notification-container mt-2">
-        {% if notification_list %}
-            <ul class="list-group">
-                {% for notification in notification_list %}
-                    <li class="list-group-item">{% inline_notification notification %}</li>
+                    </div>
                 {% endfor %}
-            </ul>
-        {% else %}
-            <div class="text-muted text-center">No notifications</div>
-        {% endif %}
+                <div class="mt-2 clearfix">
+                    <button class="btn btn-primary float-end" type="submit">Apply</button>
+                </div>
+                
+            </form>
+        </div>
     </div>
-    <div class="mt-2">
-        {% include 'blog/base/pagination_base.html' %}
+    <div class="col">
+        <div class="notification-container mt-2">
+            {% if notification_list %}
+                <ul class="list-group">
+                    {% for notification in notification_list %}
+                        <li class="list-group-item">{% inline_notification notification %}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="text-muted text-center">No notifications</div>
+            {% endif %}
+        </div>
+        <div class="mt-2">
+            {% include 'blog/base/pagination_base.html' %}
+        </div>
     </div>
-    
+    </div>
 {% endblock content %}

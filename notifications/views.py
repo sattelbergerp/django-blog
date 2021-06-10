@@ -8,7 +8,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
-from django.db.models import Q
+from django.db.models import Q, Count
+#from django.db.models.functions import Count
 
 # Create your views here.
 
@@ -78,11 +79,11 @@ class PrivateMessageCreateView(LoginRequiredMixin, CreateView):
         user.notification_set.create(content=message, type=NotificationType.get('private_message'))
         #user.notification_set.create(content=message)
         
-        return HttpResponseRedirect(reverse('notifications:privatemessage_user_index', kwargs={'pk':user.id}))
+        return HttpResponseRedirect(reverse('notifications:privatemessage_user_detail', kwargs={'pk':user.id}))
 
-class PrivateMessageUserIndexView(LoginRequiredMixin, ListView):
+class PrivateMessageUserDetailView(LoginRequiredMixin, ListView):
     model = PrivateMessage
-    template_name = 'notifications/privatemessage_user_list.html'
+    template_name = 'notifications/privatemessage_user_detail.html'
     paginate_by = 20
 
     def get_context_data(self, **kwargs):
@@ -98,6 +99,39 @@ class PrivateMessageUserIndexView(LoginRequiredMixin, ListView):
             self.target = get_object_or_404(User, pk=self.kwargs['pk'])
         
         if self.target:
-            return PrivateMessage.objects.filter((Q(sender=self.user) and Q(receiver=self.target)) | (Q(sender=self.target) and Q(receiver=self.user))).filter(Q(sender__isnull=False))
+            return PrivateMessage.objects.filter(sender__isnull=False).filter((Q(sender=self.user, receiver=self.target)) | (Q(sender=self.target, receiver=self.user)))
         else:
             return PrivateMessage.objects.filter((Q(receiver=self.user) and Q(sender__isnull=True)))
+
+class PrivateMessageIndexView(LoginRequiredMixin, ListView):
+    model = PrivateMessage
+    template_name = 'notifications/privatemessage_index.html'
+    paginate_by = 20
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["search"] = getattr(self, 'search', '')
+        return context
+
+
+    def get_queryset(self):
+        query = PrivateMessage.objects.filter(receiver=self.request.user)
+        if 'search' in self.request.GET and self.request.GET['search'] != '':
+            self.search = self.request.GET['search']
+            query = query.filter(Q(text__icontains=self.search) | Q(sender__username__icontains=self.search))
+        return query
+
+class PrivateMessageDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    model = PrivateMessage
+
+    def test_func(self):
+        return self.request.user == self.get_object().sender
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['next'] = self.request.GET.get('next', None)
+        return context
+
+    def get_success_url(self, *args, **kwargs):
+        next = self.request.POST.get('next', None)
+        return next if next else reverse('notifications:privatemessage_index')

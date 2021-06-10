@@ -74,10 +74,8 @@ class NotificationDeleteViewTest(TestCase):
         self.sender = User.objects.create(username='sender_username', password='test')
         self.receiver = User.objects.create(username='receiver_username', password='test')
         self.messages = [PrivateMessage.objects.create(text=f'receiver_test_message_{i}', sender=self.sender, receiver=self.receiver) for i in range(5)]
-        self.sender_messages = [PrivateMessage.objects.create(text=f'sender_test_message_{i}', sender=self.receiver, receiver=self.sender) for i in range(5)]
         self.notifications = [Notification.objects.create(content=message, user=self.receiver, type=NotificationType.get(name='private_message')) for message in self.messages]
-        self.sender_notifications = [Notification.objects.create(content=message, user=self.sender, type=NotificationType.get(name='private_message')) for message in self.sender_messages]
-
+     
 
     def test_notification_delete_view_disallows_other_users_from_deleting_users_notifications(self):
         self.client.force_login(self.sender)
@@ -89,11 +87,12 @@ class NotificationDeleteViewTest(TestCase):
         resp = self.client.post(reverse('notifications:notification_delete', kwargs={'pk':self.notifications[0].id}))
         self.assertFalse(Notification.objects.filter(id=self.notifications[0].id).exists())
 
-class PrivateMessageUserIndexViewTest(TestCase):
+class PrivateMessageUserDetailViewTest(TestCase):
 
     def setUp(self):
         self.sender = User.objects.create(username='sender_username', password='test')
         self.other_sender = User.objects.create(username='other_sender_username', password='test')
+        self.unrelated_user = User.objects.create(username='unrelated_user', password='test')
         self.receiver = User.objects.create(username='reciver_username', password='test')
         self.other_receiver = User.objects.create(username='other_reciver_username', password='test')
         self.messages = [PrivateMessage.objects.create(text=f'receiver_test_message_{i}', sender=self.sender, receiver=self.receiver) for i in range(3)]
@@ -102,35 +101,50 @@ class PrivateMessageUserIndexViewTest(TestCase):
         self.other_messages = [PrivateMessage.objects.create(text=f'other_receiver_test_message_{i}', sender=self.other_sender, receiver=self.other_receiver) for i in range(3)]
         self.system_messages = [PrivateMessage.objects.create(text=f'system_test_message_{i}', receiver=self.receiver) for i in range(3)]
 
-    def test_private_message_user_index_view_returns_only_messages_sent_between_a_user_and_the_target(self):
+    def test_private_message_user_detail_view_returns_only_messages_sent_between_a_user_and_the_target(self):
         self.client.force_login(self.receiver)
-        resp = self.client.get(reverse('notifications:privatemessage_user_index', kwargs={'pk': self.sender.id}))
+        resp = self.client.get(reverse('notifications:privatemessage_user_detail', kwargs={'pk': self.sender.id}))
         for message in self.messages:
-            self.assertContains(resp, message.text)
+            self.assertIn(message, resp.context['privatemessage_list'])
         for message in self.sender_messages:
-            self.assertContains(resp, message.text)
+            self.assertIn(message, resp.context['privatemessage_list'])
 
         for message in self.other_messages:
-            self.assertNotContains(resp, message.text)
+            self.assertNotIn(message, resp.context['privatemessage_list'])
         for message in self.other_sender_messages:
-            self.assertNotContains(resp, message.text)
+            self.assertNotIn(message, resp.context['privatemessage_list'])
         for message in self.system_messages:
-            self.assertNotContains(resp, message.text)
+            self.assertNotIn(message, resp.context['privatemessage_list'])
 
-    def test_private_message_user_index_view_returns_only_system_messages_when_target_is_system(self):
-        self.client.force_login(self.receiver)
-        resp = self.client.get(reverse('notifications:privatemessage_system_index'))
+    def test_private_message_user_detail_view_returns_no_messages_for_unrelated_users(self):
+        self.client.force_login(self.unrelated_user)
+        resp = self.client.get(reverse('notifications:privatemessage_user_detail', kwargs={'pk': self.sender.id}))
         for message in self.messages:
-            self.assertNotContains(resp, message.text)
+            self.assertNotIn(message, resp.context['privatemessage_list'])
         for message in self.sender_messages:
-            self.assertNotContains(resp, message.text)
+            self.assertNotIn(message, resp.context['privatemessage_list'])
 
         for message in self.other_messages:
-            self.assertNotContains(resp, message.text)
+            self.assertNotIn(message, resp.context['privatemessage_list'])
         for message in self.other_sender_messages:
-            self.assertNotContains(resp, message.text)
+            self.assertNotIn(message, resp.context['privatemessage_list'])
         for message in self.system_messages:
-            self.assertContains(resp, message.text)
+            self.assertNotIn(message, resp.context['privatemessage_list'])
+
+    def test_private_message_user_detail_view_returns_only_system_messages_when_target_is_system(self):
+        self.client.force_login(self.receiver)
+        resp = self.client.get(reverse('notifications:privatemessage_system_detail'))
+        for message in self.messages:
+            self.assertNotIn(message, resp.context['privatemessage_list'])
+        for message in self.sender_messages:
+            self.assertNotIn(message, resp.context['privatemessage_list'])
+
+        for message in self.other_messages:
+            self.assertNotIn(message, resp.context['privatemessage_list'])
+        for message in self.other_sender_messages:
+            self.assertNotIn(message, resp.context['privatemessage_list'])
+        for message in self.system_messages:
+            self.assertIn(message, resp.context['privatemessage_list'])
 
 class PrivateMessageCreateViewTest(TestCase):
 
@@ -158,4 +172,69 @@ class PrivateMessageCreateViewTest(TestCase):
         self.assertEqual(notification.type.name, 'private_message')
         self.assertEqual(notification.content, message)
         
+class PrivateMessageIndexViewTest(TestCase):
+    
+    def setUp(self):
+        self.sender = User.objects.create(username='sender_username', password='test')
+        self.sender_matching_username_search = User.objects.create(username='sender_user_keyword_username', password='test')
+        self.receiver = User.objects.create(username='reciver_username', password='test')
+        self.other_receiver = User.objects.create(username='other_reciver_username', password='test')
+        self.messages = [PrivateMessage.objects.create(text=f'receiver_test_message_{i}', sender=self.sender, receiver=self.receiver) for i in range(3)]
+        self.messages_matching_text_search = [PrivateMessage.objects.create(text=f'search_text_keyword_message_{i}', sender=self.sender, receiver=self.receiver) for i in range(3)]
+        self.messages_matching_username_search = [PrivateMessage.objects.create(text=f'receiver_test_message_{i}', sender=self.sender_matching_username_search, receiver=self.receiver) for i in range(3)]
+        self.sender_messages = [PrivateMessage.objects.create(text=f'sender_test_message_{i}', sender=self.receiver, receiver=self.sender) for i in range(3)]
+        self.other_sender_messages = [PrivateMessage.objects.create(text=f'other_sender_test_message_{i}', sender=self.other_receiver, receiver=self.sender) for i in range(3)]
+    
+    def test_private_message_index_view_returns_users_recieved_messages(self):
+        self.client.force_login(self.receiver)
+        resp = self.client.get(reverse('notifications:privatemessage_index'))
+        for message in self.messages:
+            self.assertIn(message, resp.context['privatemessage_list'])
+        for message in self.messages_matching_text_search:
+            self.assertIn(message, resp.context['privatemessage_list'])
+        for message in self.messages_matching_username_search :
+            self.assertIn(message, resp.context['privatemessage_list'])
 
+        for message in self.sender_messages:
+            self.assertNotIn(message, resp.context['privatemessage_list'])
+        for message in self.other_sender_messages:
+            self.assertNotIn(message, resp.context['privatemessage_list'])
+
+    def test_private_message_index_searches_by_message_text(self):
+        self.client.force_login(self.receiver)
+        resp = self.client.get(reverse('notifications:privatemessage_index'), data={'search': 'text_keyword'})
+        for message in self.messages_matching_text_search:
+            self.assertIn(message, resp.context['privatemessage_list'])
+
+        for message in self.messages:
+            self.assertNotIn(message, resp.context['privatemessage_list'])
+        for message in self.messages_matching_username_search:
+            self.assertNotIn(message, resp.context['privatemessage_list'])
+
+    def test_private_message_index_searches_by_sender_username(self):
+        self.client.force_login(self.receiver)
+        resp = self.client.get(reverse('notifications:privatemessage_index'), data={'search': 'user_keyword'})
+        for message in self.messages_matching_username_search:
+            self.assertIn(message, resp.context['privatemessage_list'])
+
+        for message in self.messages:
+            self.assertNotIn(message, resp.context['privatemessage_list'])
+        for message in self.messages_matching_text_search:
+            self.assertNotIn(message, resp.context['privatemessage_list'])
+
+class PrivateMessageDeleteViewTest(TestCase):
+
+    def setUp(self):
+        self.sender = User.objects.create(username='sender_username', password='test')
+        self.receiver = User.objects.create(username='receiver_username', password='test')
+        self.messages = [PrivateMessage.objects.create(text=f'receiver_test_message_{i}', sender=self.sender, receiver=self.receiver) for i in range(5)]
+
+    def test_privatemessage_delete_view_disallows_other_users_from_deleting_users_privatemessages(self):
+        self.client.force_login(self.receiver)
+        resp = self.client.post(reverse('notifications:privatemessage_delete', kwargs={'pk':self.messages[0].id}))
+        self.assertTrue(PrivateMessage.objects.filter(id=self.messages[0].id).exists())
+
+    def test_privatemessage_delete_view_allows_users_to_delete_their_own_privatemessages(self):
+        self.client.force_login(self.sender)
+        resp = self.client.post(reverse('notifications:privatemessage_delete', kwargs={'pk':self.messages[0].id}))
+        self.assertFalse(PrivateMessage.objects.filter(id=self.messages[0].id).exists())

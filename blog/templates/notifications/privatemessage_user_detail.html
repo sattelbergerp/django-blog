@@ -6,12 +6,20 @@
 
 {% block content %}
 
-    <div class='mt-2'>
-        {% if profile_user %}
-            <h3>{{profile_user.username}}</h3>
-        {% else %}
-            system
-        {% endif %}
+    <div class="clearfix mb-2 mt-2">
+        <h3 class="d-inline">
+            Messages with 
+            {% if profile_user %}
+                {{profile_user.username}}
+            {% else %}
+                system
+            {% endif %}
+        </h3>
+        <span class="user-controls float-end">
+            {% if profile_user %}
+                <a class="btn btn-primary" href="{% url 'blog:user_detail' profile_user.author.slug %}">View profile</a>
+            {% endif %}  
+        </span>
     </div>
     
     <div class="border p-2">
@@ -20,7 +28,16 @@
                 <div class="clearfix">
                     <div class="message{% if message.sender == user %} message-sent{% else %} message-reply{% endif %}">
                         <div class="clearfix">
-                            <span class="text-muted message-header">{{message.created_on|timesince}} ago</span>
+                            <span class="text-muted message-header">
+                                {{message.created_on|timesince}} ago
+                                {% if message.sender == user %}
+                                <form class="d-inline" method="POST" action="{% url 'notifications:privatemessage_delete' message.id %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <button type="submit" title="Dismiss" class="btn-blank"><i class="bi bi-x-lg ms-2"></i></button>
+                                </form>
+                                {% endif %}
+                            </span>
                         </div>
                         <div class="message-body border p-1 m-1">{{message.text}}</div>
                     </div>

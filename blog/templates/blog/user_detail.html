@@ -11,7 +11,7 @@
             {% if user|can_edit:profile_user.author %}
                     <a class="btn btn-primary" href="{% url 'blog:user_edit' profile_user.author.slug %}">Edit</a>
             {% endif %}
-            <a class="btn btn-primary" href="{% url 'notifications:privatemessage_user_index' profile_user.id %}">Message</a>
+            <a class="btn btn-primary" href="{% url 'notifications:privatemessage_user_detail' profile_user.id %}">Message</a>
             {% if profile_user.author.visible %}
                 <a class="btn btn-primary" href="{% url 'blog:author_detail' profile_user.author.slug %}">View blog</a>
             {% endif %}

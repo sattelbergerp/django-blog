@@ -1,11 +1,6 @@
 <div>
     <div class="comment-notification{% if not notification.seen %} comment-notification-unseen{% endif %}">
-        New message from 
-        {% if privatemessage.is_system_message %}
-            {{privatemessage.get_sender_name}}
-        {% else %}
-            <a href="{% url 'blog:user_detail' privatemessage.sender.author.slug %}">{{privatemessage.get_sender_name}}</a>
-        {% endif %}
+        <a href="{{ privatemessage.get_sender_messages_url }}">New message from {{privatemessage.get_sender_name}}</a>
         <span class="float-end text-muted">
             {{notification.created_on|timesince}} ago
             <form class="d-inline" method="POST" action="{% url 'notifications:notification_delete' notification.id %}">

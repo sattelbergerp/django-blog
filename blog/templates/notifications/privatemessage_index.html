@@ -1,0 +1,40 @@
+{% extends 'blog/base/page_base.html' %}
+
+{% block title %}
+    Messages
+{% endblock title %}
+
+{% block content %}
+    <div class="mt-2 clearfix">
+        <h3 class="d-inline">Messages</h3>
+        <form class="d-flex d-inline float-end" method="GET">
+            <input class="form-control me-2" type="search" placeholder="Search messages" aria-label="Search" name="search" value="{{ search }}">
+            <button class="btn btn-outline-primary" type="submit">Search</button>
+        </form>
+    </div>
+    <div class="messages-container mt-2">
+
+        {% if privatemessage_list %}
+            <ul class="list-group">
+                {% for message in privatemessage_list %}
+                    <li class="list-group-item">
+                        <div class="clearfix">
+                            <a href="{{ message.get_sender_messages_url }}">Sent by {{message.get_sender_name}}</a> 
+                            <span class="float-end text-muted">
+                                {{message.created_on|timesince}} ago
+                            </span>
+                        </div>
+                        <div>
+                            {{message.text}}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="text-muted text-center">No messages</div>
+        {% endif %}
+    </div>
+    <div class="mt-2">
+        {% include 'blog/base/pagination_base.html' %}
+    </div>
+{% endblock content %}

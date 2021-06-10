@@ -54,13 +54,17 @@
                                         <li><a class="dropdown-item" href="{% url 'blog:author_detail' slug=user.author.slug %}">Blog</a></li>
                                     {% endif %}
                                     <li><a class="dropdown-item" href="{% url 'blog:user_detail' slug=user.author.slug %}">Profile</a></li>
-                                    <li>
-                                        <a class="dropdown-item" href="{% url 'notifications:notification_index' %}">
-                                            Notifications 
+                                    <li class="clearfix">
+                                        <a class="dropdown-item clearfix" href="{% url 'notifications:notification_index' %}">
+                                            Notifications
                                             {% if unread_notification_count %}
-                                                <span class="badge rounded-pill bg-primary float-end">{{unread_notification_count}}</span>
+                                                <span class="badge rounded-pill bg-primary ms-2">{{unread_notification_count}}</span>
                                             {% endif %}
                                         </a>
+                                        
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'notifications:privatemessage_index' %}">Messages</a>
                                     </li>
                                     <li><a class="dropdown-item" href="{% url 'blog:user_edit' slug=user.author.slug %}">Settings</a></li>
                                     <li><hr class="dropdown-divider"></li>
