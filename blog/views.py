@@ -97,12 +97,11 @@ def user_edit_view(request, slug):
                     author.user.set_password(password)
             if can_edit_author:
                 author.bio = author_form.cleaned_data.get('bio')
-                author.visible = author_form.cleaned_data.get('author_enabled')
-
-                if 'author_enabled' in author_form.cleaned_data:
+                
+                if author.user != request.user:
                     author.set_author(author_form.cleaned_data['author_enabled'])
                     
-                if 'moderator' in author_form.cleaned_data and request.user.is_staff:
+                if author.user != request.user and request.user.is_staff:
                     author.set_moderator(author_form.cleaned_data['moderator'])
                 author.save()
             author.user.save()
@@ -111,7 +110,7 @@ def user_edit_view(request, slug):
                 login(request, author.user) #Changing a users password logs them out   
     else:
        user_form = UserSettingsForm(user=author.user, initial={'email': author.user.email})
-       author_form = AuthorSettingsForm(instance=author, initial={'author_enabled': author.visible, 'moderator': author.user.has_perm('blog.edit_author')})
+       author_form = AuthorSettingsForm(initial={'author_enabled': author.visible, 'moderator': author.user.has_perm('blog.edit_author'), 'bio': author.bio})
 
     context = {
         'user_form': user_form, 
@@ -155,14 +154,16 @@ def post_edit_view(request, pk=None):
                 post.header_image_name = None
                 post.save()
 
+            post.tags.clear()
             for tag_name in form.cleaned_data.get('tags', '').lower().split(','):
-                try:
-                    tag = Tag.objects.get(slug=slugify(tag_name.strip()))
-                except Tag.DoesNotExist:
-                    tag = Tag()
-                tag.name = tag_name.strip()
-                tag.save()
-                post.tags.add(tag)
+                if tag_name.strip():
+                    try:
+                        tag = Tag.objects.get(slug=slugify(tag_name.strip()))
+                    except Tag.DoesNotExist:
+                        tag = Tag()
+                    tag.name = tag_name.strip()
+                    tag.save()
+                    post.tags.add(tag)
             post.save()
             return HttpResponseRedirect(reverse('blog:post_detail', kwargs={'pk': post.pk}))
     else:

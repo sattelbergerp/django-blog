@@ -2,6 +2,9 @@ from django import template
 from django.db.models import query
 from math import floor
 from os.path import join
+from django.utils.safestring import mark_safe
+from django.template.defaultfilters import escape
+from markdown import Markdown
 
 register = template.Library()
 
@@ -28,3 +31,7 @@ def current_url(context, *args):
         params[args[i]] = args[i+1] if len(args) > i+1 else ''
     query_str = '&'.join(f'{k}={v}' for k, v in params.items())
     return f"{context['request'].path}?{query_str}"
+
+@register.simple_tag
+def markdown(text):
+    return mark_safe(Markdown().convert(escape(text)))

@@ -1,5 +1,6 @@
 {% extends 'blog/base/page_base.html' %}
 {% load blog_filters %}
+{% load blog_tags %}
 
 {% block title %}
     {{post.title}}
@@ -16,7 +17,7 @@
                     <img class="post-header-image" src={{post.header_image.url}}></img>
                 </div>
             {% endif %}
-            <div>{{post.content}}</div>
+            <div>{% markdown post.content %}</div>
             <div>
                 {% for tag in post.tags.all %}
                     {% if tag != ''%}

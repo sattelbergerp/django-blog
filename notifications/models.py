@@ -29,9 +29,9 @@ class Notification(models.Model):
     def my_callback(sender, instance, **kwargs):
         instance_type = ContentType.objects.get(app_label=instance._meta.app_label, model=type(instance).__name__.lower())
         try:
-            target = Notification.objects.get(object_id=instance.pk, content_type_id=instance_type.pk)
+            target = Notification.objects.filter(object_id=instance.pk, content_type_id=instance_type.pk)
             target.delete()
-        except Notification.DoesNotExist:
+        except (Notification.DoesNotExist, ValueError):
             pass
 
 class NotificationType(models.Model):

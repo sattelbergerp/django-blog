@@ -1,6 +1,5 @@
 from django.http.response import HttpResponseRedirect
-from django.shortcuts import render
-from django.views.generic import CreateView
+from django.shortcuts import redirect, render
 from django.contrib.auth.models import User
 from django.contrib.auth import login
 from .forms import SignupForm
@@ -19,6 +18,3 @@ def signup(request):
     else:
        form = SignupForm()
     return render(request, 'blog_accounts/signup.html', {'form': form, 'next': request.GET.get('next')})
-
-    
-

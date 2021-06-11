@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'notifications',
     'blog',
-    'blog_accounts',
+    'accounts',
 ]
 
 MIDDLEWARE = [
@@ -58,6 +58,11 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+OAUTH_REDIRECT_BASE_URL = 'http://127.0.0.1:8000'
+OAUTH_BACKENDS = []
+
+
 
 ROOT_URLCONF = 'blog_project.urls'
 

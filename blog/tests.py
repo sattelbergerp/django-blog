@@ -49,6 +49,14 @@ def create_post(author, title, content, header_image=None):
     post.save()
     return post
 
+def create_comment(post, commenter, text, upvotes, downvotes):
+    comment = post.comment_set.create(commenter=commenter, text=text, votes = upvotes - downvotes)
+    for i in range(upvotes):
+        comment.commentvote_set.create(type='u', user=commenter)
+    for i in range(downvotes):
+        comment.commentvote_set.create(type='d', user=commenter)
+    return comment
+
 def reload_user(user):
     return User.objects.get(pk=user.pk)
 
@@ -149,7 +157,7 @@ class PostModelTest(TestCase):
         self.assertTrue(post.has_been_edited())
 
 #View tests
-class PostsIndexViewTest(TestCase):
+class PostIndexViewTest(TestCase):
 
     def setUp(self):
         self.user = create_user('test_user', 'test_pass', author_visible=True)
@@ -280,7 +288,7 @@ class AuthorDetailViewTest(TestCase):
                 self.assertNotContains(resp, post.title)
                 self.assertNotContains(resp, post.content)
 
-class PostsDetailViewTest(TestCase):
+class PostDetailViewTest(TestCase):
 
     def setUp(self):
         self.user = create_user(username='test_user', password='test_pass', author_visible=True, author_bio='test_bio')
@@ -311,15 +319,17 @@ class PostsDetailViewTest(TestCase):
         post = Post(title=''.join([f't{i}' for i in range(100)]), content=''.join([f't{i}' for i in range(500)]), author=self.user.author)
         post.save()
         comments = [
-            post.comment_set.create(commenter=self.user, votes=100, text='comment_0'),
-            post.comment_set.create(commenter=self.user, votes=10, text='comment_1'),
-            post.comment_set.create(commenter=self.user, votes=1000, text='comment_2'),
-            post.comment_set.create(commenter=self.user, votes=-100, text='comment_3'),
-            post.comment_set.create(commenter=self.user, votes=-50, text='comment_4'),
-            post.comment_set.create(commenter=self.user, votes=500, text='comment_5'),
+            create_comment(post, self.user, 'comment_0', 100, 120),
+            create_comment(post, self.user, 'comment_0', 100, 2),
+            create_comment(post, self.user, 'comment_0', 8, 0),
+            create_comment(post, self.user, 'comment_0', 1, 120),
+            create_comment(post, self.user, 'comment_0', 5, 60),
+            create_comment(post, self.user, 'comment_0', 400, 120),
+            create_comment(post, self.user, 'comment_0', 40, 20),
+            create_comment(post, self.user, 'comment_0', 120, 120),
+            create_comment(post, self.user, 'comment_0', 110, 10),
+            create_comment(post, self.user, 'comment_0', 106, 40),
         ]
-        for comment in comments:
-            comment.save()
         comments.sort(key=lambda x: x.votes, reverse=True)
 
         resp = self.client.get(reverse('blog:post_detail', kwargs={'pk': post.pk}))
@@ -627,6 +637,7 @@ class PostDeleteViewTest(TestCase):
 
     def setUp(self):
         self.no_perms_user = create_user('no_perms_user', 'test_pass', author_visible=True)
+        self.other_no_perms_user = create_user('other_no_perms_user', 'test_pass', author_visible=True)
         self.author_perms_user = create_user('author_perms_user', 'test_pass', author=True, author_visible=True)
         self.mod_perms_user = create_user('mod_perms_user', 'test_pass', mod=True, author_visible=True)
         self.post = create_post(self.no_perms_user, 'post1', 'post1 author')

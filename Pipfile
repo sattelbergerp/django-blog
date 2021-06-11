@@ -7,6 +7,7 @@ name = "pypi"
 django = "*"
 pillow = "*"
 psycopg2 = "*"
+markdown = "*"
 
 [dev-packages]
 lorem-text = "*"

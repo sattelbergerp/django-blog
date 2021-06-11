@@ -23,7 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('blog/', include('blog.urls')),
     path('notifications/', include('notifications.urls')),
-    path('accounts/', include('blog_accounts.urls')),
+    path('accounts/', include('accounts.urls')),
     path('', RedirectView.as_view(url='/blog/posts')),
 ]
 

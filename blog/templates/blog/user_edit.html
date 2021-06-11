@@ -35,7 +35,7 @@
                 {% endfor %}
             </div>
         </div>
-        {% if user|can_edit:author and user != author.user %}
+        {% if user|can_edit:author and author.user != request.user %}
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" {% if author_form.author_enabled.value %}checked{% endif %} id="author-enabled" name="{{author_form.author_enabled.name}}">
                 <label class="form-check-label" for="{{author_form.author_enabled.name}}">
@@ -43,7 +43,7 @@
                 </label>
             </div>
         {%endif%}
-        {% if user.is_staff and user != author.user %}
+        {% if user.is_staff and author.user != request.user %}
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" {% if author_form.moderator.value %}checked{% endif %} id="moderator" name="{{author_form.moderator.name}}">
                 <label class="form-check-label" for="{{author_form.moderator.name}}">
@@ -93,7 +93,7 @@
         </div>
         
         {% endif %}
-        <div>
+        <div class="clearfix">
             <button type="submit" class="btn btn-primary float-end">Apply</button>
         </div>
     </form>

@@ -1,4 +1,5 @@
 {% load blog_filters %}
+{% load blog_tags %}
 <li>
     <div class="comment border d-flex">
         <div class="comment-votes-container">
@@ -37,7 +38,7 @@
                 </span>
             </div>
             <div class="comment-text">
-                {{comment.text}}
+                {% markdown comment.text %}
             </div>
             
         </div>
