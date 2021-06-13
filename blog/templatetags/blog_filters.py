@@ -10,7 +10,10 @@ def compact_int(value):
         if abs_value < 10000:
             return value
         exp = int(log(abs_value) / log(1000))
-        char = ' KMBTQ'[exp]
+        chars = ' KMBTQ'
+        if exp >= len(chars):
+            return value
+        char = chars[exp]
         return f'{value/1000**exp: .01f}{char}'.strip()
     return type(value)
 

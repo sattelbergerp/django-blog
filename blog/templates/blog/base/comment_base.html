@@ -4,25 +4,25 @@
     <div class="comment border d-flex">
         <div class="comment-votes-container">
             {% if request.user.is_authenticated and request.user != comment.commenter %}
-                <form method="POST" action="{% url 'blog:comment_vote' comment.id %}">
+                <form method="POST" action="{% url 'blog:comment_vote' comment.id %}" id="comment-{{comment.id}}-upvote-form" class="comment-upvote-form" data-id="{{comment.id}}">
                     {% csrf_token %}
                     <input type="hidden" name="type" value="upvote">
                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
                     <button class="btn-blank">
-                        <i class="bi bi-arrow-up-square{% if comment|upvoted:request.user %}-fill{% endif %}"></i>
+                        <i id="{{comment.id}}-icon-u" class="bi bi-arrow-up-square{% if comment|upvoted:request.user %}-fill{% endif %}"></i>
                     </button>
                 </form>
             {% else %}
                 <i class="bi bi-arrow-up-square vote-disabled"></i>
             {% endif %}
-            {{comment.get_votes|intcompact}}
+            <span id="comment-{{comment.id}}-votes" data-votes="{{ comment.get_votes }}">{{comment.get_votes|intcompact}}</span>
             {% if request.user.is_authenticated and request.user != comment.commenter %}
-            <form method="POST" action="{% url 'blog:comment_vote' comment.id %}">
+            <form method="POST" action="{% url 'blog:comment_vote' comment.id %}" id="comment-{{comment.id}}-downvote-form" class="comment-downvote-form" data-id="{{comment.id}}">
                 {% csrf_token %}
                 <input type="hidden" name="type" value="downvote">
                 <input type="hidden" name="next" value="{{ request.get_full_path }}">
                 <button class="btn-blank">
-                    <i class="bi bi-arrow-down-square{% if comment|downvoted:request.user %}-fill{% endif %}"></i>
+                    <i id="{{comment.id}}-icon-d" class="bi bi-arrow-down-square{% if comment|downvoted:request.user %}-fill{% endif %}"></i>
                 </button>
             </form>
             {% else %}

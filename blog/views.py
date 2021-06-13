@@ -1,26 +1,22 @@
 from notifications.models import NotificationType
-from django.db.models.expressions import Func
-from django.http.response import HttpResponseRedirect, HttpResponse
+from django.http.response import HttpResponseRedirect, JsonResponse
 from django.http import Http404
-from django.template.defaultfilters import default
 from django.urls.base import reverse
 from blog.forms import AuthorSettingsForm, UserSettingsForm, PostForm
 from django.shortcuts import get_object_or_404, render
 from django.views.generic import ListView, DetailView, DeleteView, CreateView, UpdateView
 from django.views import View
 from .models import Post, Author, Comment, Tag
-#from notifications.models import Notification
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth import login
-from django.contrib.auth.models import Permission
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.template.defaultfilters import slugify
 from PIL import Image
-from django.core.files.base import ContentFile
 from os.path import join, exists
 from os import remove
 from django.db.models import Count, F, Q
+from .templatetags.blog_filters import compact_int
 # Create your views here.
 
 class PostIndexView(ListView):
@@ -97,7 +93,7 @@ def user_edit_view(request, slug):
                     author.user.set_password(password)
             if can_edit_author:
                 author.bio = author_form.cleaned_data.get('bio')
-                
+
                 if author.user != request.user:
                     author.set_author(author_form.cleaned_data['author_enabled'])
                     
@@ -288,13 +284,13 @@ def comment_vote(request, pk):
         raise PermissionDenied
     type = request.POST.get('type', None)
     next = request.POST.get('next', None)
-    if type=='upvote':
+    if type=='upvote' or type=='u':
         if comment.has_voted(request.user, 'u'):
             comment.commentvote_set.filter(user=request.user, type='u').delete()
         else:
             comment.commentvote_set.filter(user=request.user, type='d').delete()
             comment.commentvote_set.create(user=request.user, type='u')
-    if type=='downvote':
+    if type=='downvote' or type=='d':
         if comment.has_voted(request.user, 'd'):
             comment.commentvote_set.filter(user=request.user, type='d').delete()
         else:
@@ -304,4 +300,8 @@ def comment_vote(request, pk):
     if next:
         return HttpResponseRedirect(next if next else '/')
     else:
-        return HttpResponse('Voted Ok')
+        return JsonResponse({
+            'comment_id': comment.id,
+            'votes': comment.get_votes(),
+            'votes_formatted': compact_int(comment.get_votes()),
+        })
