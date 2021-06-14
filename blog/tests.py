@@ -25,8 +25,10 @@ def create_user(username, password, author_visible=False, author_bio=None, perms
     user.author.visible = author_visible
     if author_bio:
         user.author.bio = author_bio
+
     if author:
         user.author.set_author(True)
+    
     if mod:
         user.author.set_moderator(True)
     user.author.save()
@@ -61,6 +63,7 @@ def reload_user(user):
     return User.objects.get(pk=user.pk)
 
 #Model tests
+@override_settings(AUTHOR_DEFAULT=False)
 class AuthorModelTest(TestCase):
 
     def setUp(self):
@@ -157,6 +160,7 @@ class PostModelTest(TestCase):
         self.assertTrue(post.has_been_edited())
 
 #View tests
+@override_settings(AUTHOR_DEFAULT=False)
 class PostIndexViewTest(TestCase):
 
     def setUp(self):
@@ -220,6 +224,7 @@ class PostIndexViewTest(TestCase):
         self.assertNotContains(resp, post.title)
         self.assertNotContains(resp, post.content)
 
+@override_settings(AUTHOR_DEFAULT=False)
 class AuthorDetailViewTest(TestCase):
 
     def setUp(self):
@@ -288,6 +293,7 @@ class AuthorDetailViewTest(TestCase):
                 self.assertNotContains(resp, post.title)
                 self.assertNotContains(resp, post.content)
 
+@override_settings(AUTHOR_DEFAULT=False)
 class PostDetailViewTest(TestCase):
 
     def setUp(self):
@@ -337,6 +343,7 @@ class PostDetailViewTest(TestCase):
             self.assertContains(resp, comments[i].text)
         self.assertQuerysetEqual(resp.context['comments'], comments[:5])
         
+@override_settings(AUTHOR_DEFAULT=False)
 class PostCommentsViewTest(TestCase):
 
     def setUp(self):
@@ -371,7 +378,8 @@ class PostCommentsViewTest(TestCase):
         for comment in comments:
             self.assertContains(resp, comment.text)
         self.assertQuerysetEqual(resp.context['comments'], comments)
-    
+
+@override_settings(AUTHOR_DEFAULT=False)
 class UserEditViewTest(TestCase):
     
     def setUp(self):
@@ -467,23 +475,7 @@ class UserEditViewTest(TestCase):
     def test_user_edit_page_permits_valid_password(self):
         self.util_try_changing_user_password_and_email(self.no_perms_user, self.no_perms_user, True, new_password='abcdef8A&')
 
-    @override_settings(ENFORCE_PASSWORD_VALIDATION=True)
-    def test_user_edit_page_denies_password_without_at_least_one_lowercase_char(self):
-        self.util_try_changing_user_password_and_email(self.no_perms_user, self.no_perms_user, False, new_password='ABCDEFGHIJ8*')
-
-    @override_settings(ENFORCE_PASSWORD_VALIDATION=True)
-    def test_user_edit_page_denies_password_without_at_least_one_uppercase_char(self):
-        self.util_try_changing_user_password_and_email(self.no_perms_user, self.no_perms_user, False, new_password='abcdefghij8*')
-
-    @override_settings(ENFORCE_PASSWORD_VALIDATION=True)
-    def test_user_edit_page_denies_password_without_at_least_one_number(self):
-        self.util_try_changing_user_password_and_email(self.no_perms_user, self.no_perms_user, False, new_password='ABCDEFGHIJ*')
-
-    @override_settings(ENFORCE_PASSWORD_VALIDATION=True)
-    def test_user_edit_page_denies_password_without_at_least_one_symbol(self):
-        self.util_try_changing_user_password_and_email(self.no_perms_user, self.no_perms_user, False, new_password='ABCDEFGHIJ8')
-
-@override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT)
+@override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT, AUTHOR_DEFAULT=False)
 class PostCreateViewTest(TestCase):
     
     def setUp(self):
@@ -548,7 +540,7 @@ class PostCreateViewTest(TestCase):
             post = resp.context.get('post')
             self.assertIsNone(post)
             
-@override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT)
+@override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT, AUTHOR_DEFAULT=False)
 class PostEditViewTest(TestCase):
     
     def setUp(self):

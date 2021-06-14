@@ -30,7 +30,7 @@
             </div>
         </div>
         <div>
-            <a href="#">Forgot your password</a>
+            <a href="{% url 'password_reset' %}">Forgot your password</a>
         </div>
         <div>
             <a href="{% url 'signup' %}{% if next %}?next={{ next }}{% endif %}">Create a new account</a>

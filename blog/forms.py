@@ -7,6 +7,7 @@ from .models import Author, Post
 from PIL import Image
 from django.contrib.humanize.templatetags.humanize import intcomma
 from accounts.forms import BaseUserForm
+from django.utils.translation import gettext as _
 
 class UserSettingsForm(BaseUserForm):
     password = forms.CharField(max_length=User.password.field.max_length, required=False)
@@ -32,9 +33,9 @@ class UserSettingsForm(BaseUserForm):
 
         if password or email != self.user.email:
             if not current_password:
-                self.add_error('current_password', 'Required to change username or password')
+                self.add_error('current_password', _('Required to change username or password'))
             elif not authenticate(username=self.user.username, password=current_password):
-                self.add_error('current_password', 'Password is incorrect')
+                self.add_error('current_password', _('Password is incorrect'))
 
 class AuthorSettingsForm(forms.ModelForm):
     author_enabled = forms.BooleanField(required=False)

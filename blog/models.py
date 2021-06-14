@@ -9,7 +9,7 @@ from os.path import basename
 from .util import create_group_if_not_exists
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
-
+from django.conf import settings
 
 class Post(models.Model):
     
@@ -143,6 +143,9 @@ class Author(models.Model):
     def create_user_author(sender, instance, created, **kwargs):
         if created:
             instance.author = Author.objects.create(user=instance, slug=slugify(instance.username))
+            if getattr(settings, 'AUTHOR_DEFAULT', False) == True:
+                instance.author.set_author(True)
+                instance.author.save()
 
     @receiver(post_save, sender=User)
     def save_user_author(sender, instance, created, **kwargs):

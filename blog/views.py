@@ -17,6 +17,7 @@ from os.path import join, exists
 from os import remove
 from django.db.models import Count, F, Q
 from .templatetags.blog_filters import compact_int
+from django.contrib.auth.password_validation import password_changed
 # Create your views here.
 
 class PostIndexView(ListView):
@@ -85,6 +86,7 @@ def user_edit_view(request, slug):
                 author.user.email = email
                 if password:
                     author.user.set_password(password)
+                    password_changed(password, user=author.user)
             if can_edit_author:
                 author.bio = author_form.cleaned_data.get('bio')
 

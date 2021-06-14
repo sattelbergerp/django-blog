@@ -17,8 +17,8 @@ from os import environ, path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 #Blog specific settings
-ENFORCE_PASSWORD_VALIDATION = False
 TEST_RESOURCES_PATH = path.join(BASE_DIR, 'test_resources')
+AUTHOR_DEFAULT = True
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
@@ -29,24 +29,25 @@ SECRET_KEY = environ['DJANGO_SECRET_KEY']
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = environ.get('DJANGO_DEBUG', 'False').lower() == 'true'
 
+
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
 ALLOWED_HOSTS = []
-
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Application definition
 
 INSTALLED_APPS = [
+    'notifications',
+    'blog',
+    'accounts',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'notifications',
-    'blog',
-    'accounts',
 ]
 
 MIDDLEWARE = [
