@@ -89,5 +89,7 @@ class Command(BaseCommand):
                             print(f'\rGenerating posts... ({i+1}/{len(files)}) {p}%',end='')
                             lp = p
                         comment.commentvote_set.create(user=users[randrange(0, len(users)-1)], type='u' if randrange(0,2)==0 else 'd')
+                    comment.votes = comment.get_computed_votes()
+                    comment.save()
 
 

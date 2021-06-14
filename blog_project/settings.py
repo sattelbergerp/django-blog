@@ -34,7 +34,9 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
 ALLOWED_HOSTS = []
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Application definition
 
