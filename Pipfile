@@ -8,6 +8,8 @@ django = "*"
 pillow = "*"
 psycopg2 = "*"
 markdown = "*"
+gunicorn = "*"
+django-heroku = "*"
 
 [dev-packages]
 lorem-text = "*"

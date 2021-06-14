@@ -1,3 +1,5 @@
 django
 pillow
 markdown
+gunicorn
+django-heroku
