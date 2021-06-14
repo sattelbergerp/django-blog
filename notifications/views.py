@@ -101,7 +101,7 @@ class PrivateMessageUserDetailView(LoginRequiredMixin, ListView):
         if self.target:
             return PrivateMessage.objects.filter(sender__isnull=False).filter((Q(sender=self.user, receiver=self.target)) | (Q(sender=self.target, receiver=self.user)))
         else:
-            return PrivateMessage.objects.filter((Q(receiver=self.user) and Q(sender__isnull=True)))
+            return PrivateMessage.objects.filter((Q(receiver=self.user, sender__isnull=True)))
 
 class PrivateMessageIndexView(LoginRequiredMixin, ListView):
     model = PrivateMessage

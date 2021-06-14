@@ -1,7 +1,8 @@
 {% extends 'blog/base/page_base.html' %}
+{% load blog_tags %}
 
 {% block title %}
-    Messages
+    Private Messages
 {% endblock title %}
 
 {% block content %}
@@ -25,7 +26,7 @@
                             </span>
                         </div>
                         <div>
-                            {{message.text}}
+                            {% markdown message.text %}
                         </div>
                     </li>
                 {% endfor %}

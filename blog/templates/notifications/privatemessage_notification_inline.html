@@ -1,3 +1,4 @@
+{% load blog_tags %}
 <div>
     <div class="comment-notification{% if not notification.seen %} comment-notification-unseen{% endif %}">
         <a href="{{ privatemessage.get_sender_messages_url }}">New message from {{privatemessage.get_sender_name}}</a>
@@ -9,5 +10,5 @@
             </form>
         </span>
     </div>
-    <div>{{privatemessage.text|truncatechars:250}}</div>
+    <div>{% markdown privatemessage.text %}</div>
 </div>

@@ -4,8 +4,9 @@ from django.contrib.contenttypes.fields import GenericForeignKey, ContentType
 from .utils import create_notification_types
 from django.db.models.deletion import CASCADE
 from django.urls import reverse
-from django.db.models.signals import pre_delete
+from django.db.models.signals import pre_delete, post_save
 from django.dispatch import receiver
+from django.conf import settings
 
 # Create your models here.
 
@@ -33,6 +34,13 @@ class Notification(models.Model):
             target.delete()
         except (Notification.DoesNotExist, ValueError):
             pass
+
+    @receiver(post_save, sender=User)
+    def create_user_author(sender, instance, created, **kwargs):
+        welcome_message = getattr(settings, 'NOTIFICATIONS_WELCOME_MESSAGE', None)
+        if welcome_message and created:
+            private_message = PrivateMessage.objects.create(text=welcome_message, receiver=instance)
+            Notification.objects.create(content=private_message, user=instance, type=NotificationType.get('private_message'))
 
 class NotificationType(models.Model):
     name = models.CharField(max_length=50, unique=True)

@@ -1,3 +1,5 @@
+{% load blog_tags %}
+
 <div>
     <div class="comment-notification{% if not notification.seen %} comment-notification-unseen{% endif %}">
         <a href="{% url 'blog:user_detail' comment.commenter.author.slug %}">{{comment.commenter.username}}</a>
@@ -11,5 +13,5 @@
             </form>
         </span>
     </div>
-    <div>{{comment.text}}</div>
+    <div>{% markdown comment.text %}</div>
 </div>

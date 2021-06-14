@@ -52,7 +52,7 @@
         <div>
             <a href="{% url 'login' %}{% if next %}?next={{ next }}{% endif %}">Login to an existing account</a>
         </div>
-        <input type="hidden" name="next" value="{{ next }}" />
+        <input type="hidden" name="next" value="{% if next %}{{ next }}{% endif %}" />
         <div>
             <button type="submit" class="btn btn-primary float-end">Create Account</button>
         </div>

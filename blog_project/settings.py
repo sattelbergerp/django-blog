@@ -59,10 +59,9 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-OAUTH_REDIRECT_BASE_URL = 'http://127.0.0.1:8000'
-OAUTH_BACKENDS = []
-
-
+if path.exists('welcome_message.md'):
+    with open('welcome_message.md') as f:
+        NOTIFICATIONS_WELCOME_MESSAGE = f.read()
 
 ROOT_URLCONF = 'blog_project.urls'
 

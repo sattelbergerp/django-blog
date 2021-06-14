@@ -46,12 +46,16 @@
                     {% for comment in comments %}
                         {% include 'blog/base/comment_base.html'%}
                     {% endfor %}
+                {% else %}
+                    <div class="text-muted text-center">No comments yet</div>
                 {% endif %}
                 
             </ul>
             <div class="more-comments-link mb-5">
                 <span>
-                    <a class="btn btn-primary" href="{% url 'blog:post_comment_index' post.id %}">View all comments ({{comment_count}})</a>
+                    {% if comments %}
+                        <a class="btn btn-primary" href="{% url 'blog:post_comment_index' post.id %}">View all comments ({{comment_count}})</a>
+                    {% endif %}
                     {% if user.is_authenticated %}
                         <a class="btn btn-primary" href="{% url 'blog:comment_create' post.id %}?next={{ request.get_full_path|urlencode }}">Leave a comment</a>
                     {% endif %}                    

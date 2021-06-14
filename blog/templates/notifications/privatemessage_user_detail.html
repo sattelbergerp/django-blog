@@ -1,7 +1,12 @@
 {% extends 'blog/base/page_base.html' %}
+{% load blog_tags %}
 
 {% block title %}
-    Private Messages
+    {% if profile_user %}
+        {{profile_user.username}} - Messages
+    {% else %}
+        system - Messages
+    {% endif %}
 {% endblock title %}
 
 {% block content %}
@@ -35,7 +40,7 @@
                                 {% endif %}
                             </span>
                         </div>
-                        <div class="message-body border p-1 m-1">{{message.text}}</div>
+                        <div class="message-body border p-1 m-1">{% markdown message.text %}</div>
                     </div>
                 </div>
             {% endfor %}

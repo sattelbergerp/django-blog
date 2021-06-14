@@ -11,7 +11,9 @@
             {% if user|can_edit:profile_user.author %}
                     <a class="btn btn-primary" href="{% url 'blog:user_edit' profile_user.author.slug %}">Edit</a>
             {% endif %}
-            <a class="btn btn-primary" href="{% url 'notifications:privatemessage_user_detail' profile_user.id %}">Message</a>
+            {% if user.is_authenticated and profile_user != user %}
+                <a class="btn btn-primary" href="{% url 'notifications:privatemessage_user_detail' profile_user.id %}">Message</a>
+            {% endif %}
             {% if profile_user.author.visible %}
                 <a class="btn btn-primary" href="{% url 'blog:author_detail' profile_user.author.slug %}">View blog</a>
             {% endif %}
@@ -22,6 +24,8 @@
             {% for comment in comments %}
                 {% include 'blog/base/comment_base.html'%}
             {% endfor %}
+        {% else %}
+            <div class="text-muted text-center">User hasn't left any comments</div>
         {% endif %} 
     </ul>
     {% include 'blog/base/pagination_base.html' %}

@@ -189,7 +189,8 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
         post = get_object_or_404(Post, pk=self.kwargs['pk'])
         comment = Comment(post=post, commenter=self.request.user, text=form.cleaned_data['text'])
         comment.save()
-        post.author.user.notification_set.create(content=comment, type=NotificationType.get(name='new_comment_on_post'))
+        if post.author.user != self.request.user:
+            post.author.user.notification_set.create(content=comment, type=NotificationType.get(name='new_comment_on_post'))
         next = self.request.POST.get('next', None)
         return HttpResponseRedirect(next if next else '/')
 
