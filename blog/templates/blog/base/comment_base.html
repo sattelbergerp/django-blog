@@ -15,7 +15,7 @@
             {% else %}
                 <i class="bi bi-arrow-up-square vote-disabled"></i>
             {% endif %}
-            <span id="comment-{{comment.id}}-votes" data-votes="{{ comment.get_votes }}">{{comment.get_votes|intcompact}}</span>
+            <span id="comment-{{comment.id}}-votes" data-votes="{{ comment.votes }}">{{comment.votes|intcompact}}</span>
             {% if request.user.is_authenticated and request.user != comment.commenter %}
             <form method="POST" action="{% url 'blog:comment_vote' comment.id %}" id="comment-{{comment.id}}-downvote-form" class="comment-downvote-form" data-id="{{comment.id}}">
                 {% csrf_token %}

@@ -27,10 +27,7 @@ class PostIndexView(ListView):
 class PostDetailView(View):
     def get(self, request, pk):
         post = get_object_or_404(Post, pk=pk, author__visible=True)
-        query = post.comment_set.annotate(num_upvotes=Count('commentvote', filter=Q(commentvote__type='u')))
-        query = query.annotate(num_downvotes=Count('commentvote', filter=Q(commentvote__type='d')))
-        query = query.annotate(num_votes=F('num_upvotes') - F('num_downvotes'))
-        comments = query.order_by('-num_votes')[:5]
+        comments = post.comment_set.order_by('-votes')[:5]
         return render(request, 'blog/post_detail.html', {'post': post, 'comments': comments, 'comment_count': post.comment_set.count()})
 
 class PostCommentIndexView(ListView):
@@ -52,10 +49,7 @@ class PostCommentIndexView(ListView):
             if sort == 'recent':
                 self.sort_by = 'recent'
                 return self.post.comment_set.order_by('-created_on').all()
-        query = self.post.comment_set.annotate(num_upvotes=Count('commentvote', filter=Q(commentvote__type='u')))
-        query = query.annotate(num_downvotes=Count('commentvote', filter=Q(commentvote__type='d')))
-        query = query.annotate(num_votes=F('num_upvotes') - F('num_downvotes'))
-        return query.order_by('-num_votes')
+        return self.post.comment_set.order_by('-votes')
 
 class AuthorDetailView(ListView):
     paginate_by = 20
@@ -288,21 +282,27 @@ def comment_vote(request, pk):
     if type=='upvote' or type=='u':
         if comment.has_voted(request.user, 'u'):
             comment.commentvote_set.filter(user=request.user, type='u').delete()
+            comment.votes -= 1
         else:
-            comment.commentvote_set.filter(user=request.user, type='d').delete()
+            deleted, deleted_list = comment.commentvote_set.filter(user=request.user, type='d').delete()
             comment.commentvote_set.create(user=request.user, type='u')
+            comment.votes += 2 if deleted > 0 else 1
     if type=='downvote' or type=='d':
         if comment.has_voted(request.user, 'd'):
             comment.commentvote_set.filter(user=request.user, type='d').delete()
+            comment.votes += 1
         else:
-            comment.commentvote_set.filter(user=request.user, type='u').delete()
+            deleted, deleted_list = comment.commentvote_set.filter(user=request.user, type='u').delete()
             comment.commentvote_set.create(user=request.user, type='d')
+            comment.votes -= 2 if deleted > 0 else 1
+
+    comment.save()
 
     if next:
         return HttpResponseRedirect(next if next else '/')
     else:
         return JsonResponse({
             'comment_id': comment.id,
-            'votes': comment.get_votes(),
-            'votes_formatted': compact_int(comment.get_votes()),
+            'votes': comment.votes,
+            'votes_formatted': compact_int(comment.votes),
         })

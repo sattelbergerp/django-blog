@@ -82,7 +82,8 @@ class Comment(models.Model):
     def can_user_delete(self, user):
         return self.commenter == user or user.has_perm('blog.delete_comment') or self.post.author == user.author
 
-    def get_votes(self):
+    """Calculate vote totals"""
+    def get_computed_votes(self):
         if not getattr(self, 'cached_votes', None):
             self.cached_votes = self.commentvote_set.filter(type='u').count() - self.commentvote_set.filter(type='d').count()
         return self.cached_votes
