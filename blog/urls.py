@@ -16,6 +16,7 @@ urlpatterns = [
     path('comments/<int:pk>/vote', views.comment_vote, name='comment_vote'),
     path('authors/<slug:slug>/', views.AuthorDetailView.as_view(), name='author_detail'),
     path('users/<slug:slug>/edit', views.user_edit_view, name='user_edit'),
+    path('users/<slug:slug>/delete', views.UserDeleteView.as_view(), name='user_delete'),
     path('users/<slug:slug>/', views.UserDetailView.as_view(), name='user_detail'),
     #path('notifications/', views.NotificationIndexView.as_view(), name='notification_index'),
    # path('notifications/<int:pk>/delete', views.NotificationDeleteView.as_view(), name='notification_delete'),

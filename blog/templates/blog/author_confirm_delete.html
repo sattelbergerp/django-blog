@@ -1,0 +1,25 @@
+{% extends 'blog/base/page_base.html' %}
+
+{% block title %}
+    Delete Account - {{author.user.username}}
+{% endblock title %}
+
+{% block content %}
+    <div>
+        <div class="mt-2" >
+            <h4>Delete account {{author.user.username}}?</h4>
+            <p>This account and everying related to it will be deleted forever.</p>
+        </div>
+        <span class="float-end">
+            
+            <form method="post" action="">
+                {% csrf_token %}
+                {% if next %}<input type="hidden" name="next" value="{{ next|urlencode }}" />{% endif %}
+                
+                <input type="submit" class="btn btn-danger" value="Delete">
+                <a class="btn btn-primary" href="{{ prev|urlencode }}">Cancel</a>
+            </form>
+            
+        </span>
+    </div>   
+{% endblock content %}

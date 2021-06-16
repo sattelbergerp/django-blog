@@ -136,6 +136,9 @@ class Author(models.Model):
     def can_user_edit(self, user):
         return user.has_perm('blog.change_author') or (user == self.user and user.has_perm('blog.modify_own_author')) or user.is_staff
 
+    def can_user_delete(self, user):
+        return user.has_perm('auth.delete_user') or user == self.user
+
     def get_absolute_url(self):
         return reverse('blog:author_detail', kwargs={'slug': self.slug})
 

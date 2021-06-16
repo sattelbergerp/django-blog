@@ -18,7 +18,7 @@
             </span>
         </div>
         
-        {{author.bio}}
+        {% if author.bio %}{{author.bio}}{% endif %}
     </div>
     {% include 'blog/base/post_list_base.html' %}
 {% endblock content %}

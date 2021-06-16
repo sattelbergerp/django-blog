@@ -30,7 +30,7 @@
                 <a href="{{post.author.get_absolute_url}}">
                     <h5>{{post.author.user.username}}</h5>
                 </a>
-                {{post.author.bio}}
+                {% if post.author.bio %}{{post.author.bio}}{% endif %}
             </div>
             <div class="text-muted fst-italic">
                 Published on {{post.created_on}}

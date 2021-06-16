@@ -94,6 +94,9 @@
         
         {% endif %}
         <div class="clearfix">
+            {% if user|can_delete:author %}
+                <a href="{% url 'blog:user_delete' author.slug %}?prev={{ request.get_full_path }}" class="btn btn-danger float-start">Delete</a>
+            {% endif %}
             <button type="submit" class="btn btn-primary float-end">Apply</button>
         </div>
     </form>

@@ -16,13 +16,11 @@
                 </div>
             </div>
         </div>
-        {% empty %}
-            <div class="text-muted text-center">No posts yet</div>
         {% endfor %}
         
         {% include 'blog/base/pagination_base.html' %}
 
     {% else %}
-        No posts found.
+        <div class="text-muted text-center mt-2">No posts yet</div>
     {% endif %}
  </div>

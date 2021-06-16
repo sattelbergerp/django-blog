@@ -475,6 +475,29 @@ class UserEditViewTest(TestCase):
     def test_user_edit_page_permits_valid_password(self):
         self.util_try_changing_user_password_and_email(self.no_perms_user, self.no_perms_user, True, new_password='abcdef8A&')
 
+@override_settings(AUTHOR_DEFAULT=False)
+class UserDeleteViewTest(TestCase):
+    
+    def setUp(self):
+        self.no_perms_user = create_user('no_perms_user', 'test_pass', author_bio='Old Bio')
+        self.other_no_perms_user = create_user('author_perms_user', 'test_pass', author_bio='Old Bio')
+        self.mod_perms_user = create_user('mod_perms_user', 'test_pass', mod=True, author_bio='Old Bio')
+
+    def test_user_delete_allows_a_user_to_delete_their_own_account(self):
+        self.client.force_login(self.no_perms_user)
+        resp = self.client.post(reverse('blog:user_delete', kwargs={'slug': self.no_perms_user.author.slug}))
+        self.assertRaises(User.DoesNotExist, lambda: User.objects.get(pk=self.no_perms_user.id))
+
+    def test_user_delete_allows_a_mod_to_delete_users_accounts(self):
+        self.client.force_login(self.mod_perms_user)
+        resp = self.client.post(reverse('blog:user_delete', kwargs={'slug': self.no_perms_user.author.slug}))
+        self.assertRaises(User.DoesNotExist, lambda: User.objects.get(pk=self.no_perms_user.id))
+
+    def test_user_delete_disallows_users_deleting_other_accounts(self):
+        self.client.force_login(self.other_no_perms_user)
+        resp = self.client.post(reverse('blog:user_delete', kwargs={'slug': self.no_perms_user.author.slug}))
+        self.assertEqual(User.objects.filter(pk=self.no_perms_user.id).count(), 1, 'Account does not exist')
+
 @override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT, AUTHOR_DEFAULT=False)
 class PostCreateViewTest(TestCase):
     

@@ -1,0 +1,10 @@
+\q
+ALTER USER patrick WITH PASSWORD pgdbadmn
+;
+ALTER USER patrick WITH PASSWORD 'pgdbadmn';
+CREATE DATABASE polls;
+\q
+/q
+\q
+\l
+\s polls

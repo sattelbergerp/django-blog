@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from notifications.models import NotificationType
 from django.http.response import HttpResponseRedirect, JsonResponse
 from django.http import Http404
@@ -239,6 +240,27 @@ class UserDetailView(ListView):
         self.user = get_object_or_404(Author, slug=self.kwargs['slug']).user
         
         return self.user.comment_set.order_by('-created_on').all()
+
+class UserDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    model = Author
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['next'] = self.request.GET.get('next', None)
+        context['prev'] = self.request.GET.get('prev', '/')
+        return context
+
+    def test_func(self):
+        return self.get_object().can_user_delete(self.request.user)
+
+    def get_success_url(self, *args, **kwargs):
+        next = self.request.POST.get('next', None)
+        return next if next else '/'
+
+    def delete(self, request, slug):
+        Author.objects.get(slug=slug).user.delete()
+        next = self.request.POST.get('next', None)
+        return HttpResponseRedirect(next if next else '/')
 
 class TagIndexView(ListView):
     model = Tag

@@ -22,6 +22,8 @@
                 <a href="{% url 'blog:tag_detail' tag.slug %}">{{ tag }}</a>
                 ({{ tag.post_set.all.count }})
             </div>
+        {% empty %}
+            <div class="text-muted text-center mt-2">No tags found</div>
         {% endfor %}
     </div>
     {% include 'blog/base/pagination_base.html' %}
