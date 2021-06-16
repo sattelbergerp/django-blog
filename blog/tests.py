@@ -217,7 +217,7 @@ class PostIndexViewTest(TestCase):
                 self.assertNotContains(resp, post.content)
 
     def test_post_index_truncates_long_title_and_text(self):
-        post = Post(title=''.join([f't{i}' for i in range(100)]), content=''.join([f't{i}' for i in range(500)]), author=self.user.author)
+        post = Post(title=''.join([f'ti' for i in range(100)]), content=''.join([f'ti' for i in range(500)]), author=self.user.author)
         post.save()
         resp = self.client.get(reverse('blog:post_index'))
         self.assertEquals(resp.status_code, 200)
@@ -312,7 +312,7 @@ class PostDetailViewTest(TestCase):
         self.assertEquals(resp.status_code, 404)
 
     def test_post_detail_responds_with_title_content_author_username_bio(self):
-        post = Post(title=''.join([f't{i}' for i in range(100)]), content=''.join([f't{i}' for i in range(500)]), author=self.user.author)
+        post = Post(title=''.join([f'ti' for i in range(100)]), content=''.join([f'ti' for i in range(500)]), author=self.user.author)
         post.save()
         resp = self.client.get(reverse('blog:post_detail', kwargs={'pk': post.pk}))
         self.assertEquals(resp.status_code, 200)
@@ -322,7 +322,7 @@ class PostDetailViewTest(TestCase):
         self.assertContains(resp, post.author.user.username)
 
     def test_post_detail_returns_top_5_comments(self):
-        post = Post(title=''.join([f't{i}' for i in range(100)]), content=''.join([f't{i}' for i in range(500)]), author=self.user.author)
+        post = Post(title=''.join([f'ti' for i in range(100)]), content=''.join([f'ti' for i in range(500)]), author=self.user.author)
         post.save()
         comments = [
             create_comment(post, self.user, 'comment_0', 100, 120),
@@ -361,7 +361,7 @@ class PostCommentsViewTest(TestCase):
         self.assertEqual(resp.status_code, 404)
 
     def test_post_comments_index_returns_posts_sorted_by_creation_date(self):
-        post = Post(title=''.join([f't{i}' for i in range(100)]), content=''.join([f't{i}' for i in range(500)]), author=self.user.author)
+        post = Post(title=''.join([f'ti' for i in range(100)]), content=''.join([f'ti' for i in range(500)]), author=self.user.author)
         post.save()
         comments = []
         day_deltas = [10, -5, 11, 2, -100]
@@ -719,21 +719,21 @@ class CommentEditViewTest(TestCase):
 
     def test_comment_edit_lets_users_edit_their_own_comments(self):
         self.client.force_login(self.no_perms_user)
-        resp = self.client.post(reverse('blog:comment_edit', kwargs={'pk': self.post.pk}), {'text': 'New text'})
+        resp = self.client.post(reverse('blog:comment_edit', kwargs={'pk': self.comment.pk}), {'text': 'New text'})
         self.assertEqual(resp.status_code, 302)
         comment = Comment.objects.get(pk=self.comment.pk)
         self.assertEqual(comment.text, 'New text')
 
     def test_comment_edit_lets_users_with_perms_edit_other_users_comments(self):
         self.client.force_login(self.edit_comment_user)
-        resp = self.client.post(reverse('blog:comment_edit', kwargs={'pk': self.post.pk}), {'text': 'New text'})
+        resp = self.client.post(reverse('blog:comment_edit', kwargs={'pk': self.comment.pk}), {'text': 'New text'})
         self.assertEqual(resp.status_code, 302)
         comment = Comment.objects.get(pk=self.comment.pk)
         self.assertEqual(comment.text, 'New text')
 
     def test_comment_edit_doesnt_let_users_without_perms_edit_others_comments(self):
         self.client.force_login(self.author_perms_user)
-        resp = self.client.post(reverse('blog:comment_edit', kwargs={'pk': self.post.pk}), {'text': 'New text'})
+        resp = self.client.post(reverse('blog:comment_edit', kwargs={'pk': self.comment.pk}), {'text': 'New text'})
         self.assertEqual(resp.status_code, 403)
         comment = Comment.objects.get(pk=self.comment.pk)
         self.assertEqual(comment.text, 'original text')
@@ -791,7 +791,7 @@ class UserDetailViewTest(TestCase):
         self.assertEqual(resp.status_code, 404)
 
     def test_user_detail_returns_comments_sorted_by_creation_date(self):
-        post = Post(title=''.join([f't{i}' for i in range(100)]), content=''.join([f't{i}' for i in range(500)]), author=self.user.author)
+        post = Post(title=''.join([f'ti' for i in range(100)]), content=''.join([f'ti' for i in range(500)]), author=self.user.author)
         post.save()
         comments = []
         day_deltas = [10, -5, 11, 2, -100]
