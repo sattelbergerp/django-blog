@@ -3,3 +3,4 @@ Pipfile.lock
 media/*
 test_resources/test_uploads_dir/*
 .vscode/*
+staticfiles/*
