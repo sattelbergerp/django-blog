@@ -498,7 +498,7 @@ class UserDeleteViewTest(TestCase):
         resp = self.client.post(reverse('blog:user_delete', kwargs={'slug': self.no_perms_user.author.slug}))
         self.assertEqual(User.objects.filter(pk=self.no_perms_user.id).count(), 1, 'Account does not exist')
 
-@override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT, AUTHOR_DEFAULT=False)
+@override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT, AUTHOR_DEFAULT=False, DISABLE_IMAGE_UPLOADS=False)
 class PostCreateViewTest(TestCase):
     
     def setUp(self):
@@ -563,7 +563,7 @@ class PostCreateViewTest(TestCase):
             post = resp.context.get('post')
             self.assertIsNone(post)
             
-@override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT, AUTHOR_DEFAULT=False)
+@override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT, AUTHOR_DEFAULT=False, DISABLE_IMAGE_UPLOADS=False)
 class PostEditViewTest(TestCase):
     
     def setUp(self):

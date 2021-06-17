@@ -19,6 +19,7 @@ from os import remove
 from django.db.models import Count, F, Q
 from .templatetags.blog_filters import compact_int
 from django.contrib.auth.password_validation import password_changed
+from django.conf import settings
 # Create your views here.
 
 class PostIndexView(ListView):
@@ -131,7 +132,7 @@ def post_edit_view(request, pk=None):
             post.content = form.cleaned_data.get('content')
             post.save()
             header_image = form.cleaned_data.get('header_image')
-            if header_image:
+            if header_image and not getattr(settings, 'DISABLE_IMAGE_UPLOADS', False):
                 
                 post.header_image_name = header_image.name
                 with Image.open(header_image) as im:
@@ -161,7 +162,7 @@ def post_edit_view(request, pk=None):
             return HttpResponseRedirect(reverse('blog:post_detail', kwargs={'pk': post.pk}))
     else:
         form = PostForm(instance=post, initial={'tags': post.tags_str() if post else ''})
-    return render(request, 'blog/post_edit.html', {'form': form, 'post': post})
+    return render(request, 'blog/post_edit.html', {'form': form, 'post': post, 'images_disabled': getattr(settings, 'DISABLE_IMAGE_UPLOADS', False)})
 
 class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Post

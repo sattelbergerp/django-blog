@@ -52,11 +52,15 @@
         <form class="mt-3" method="POST" action="{% url 'notifications:privatemessage_create' profile_user.id %}">
             {% csrf_token %}
             <div class="mb-3">
-                <label id="content" class="form-label" for="text">Message text</label>
-                <textarea rows="2" class="form-control" aria-label="With textarea" name="text"></textarea>
+                <label class="form-label" for="content">Message text</label>
+                <textarea id="content" rows="2" class="form-control markdown-editor" aria-label="With textarea" name="text"></textarea>
+                <div class="form-text">Format with markdown</div>
             </div>
             <div>
                 <button type="submit" class="btn btn-primary float-end">Send</button>
+            </div>
+            <div class="mb-2">
+                <div id="content-preview" class="border p-2"></div>
             </div>
         </form>
     {% endif %}

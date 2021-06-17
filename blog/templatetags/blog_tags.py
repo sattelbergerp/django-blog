@@ -1,3 +1,4 @@
+from bleach.sanitizer import ALLOWED_TAGS
 from django import template
 from django.db.models import query
 from math import floor
@@ -5,6 +6,7 @@ from os.path import join
 from django.utils.safestring import mark_safe
 from django.template.defaultfilters import escape
 from markdown import Markdown
+from bleach import clean
 
 register = template.Library()
 
@@ -34,4 +36,4 @@ def current_url(context, *args):
 
 @register.simple_tag
 def markdown(text):
-    return mark_safe(Markdown().convert(escape(text)))
+    return mark_safe(clean(Markdown().convert(escape(text)), tags=['p', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'br'] + ALLOWED_TAGS))

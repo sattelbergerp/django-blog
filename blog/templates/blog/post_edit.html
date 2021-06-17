@@ -12,11 +12,11 @@
 <div class="form-window form-window-wide">
     <form method="POST" action="{% if post %}{% url 'blog:post_edit' post.pk %}{% else %}{% url 'blog:post_create'%}{% endif %}" enctype="multipart/form-data">
         {% csrf_token %}
-        <div class="alert alert-warning">
-            Attempting to upload an image will result in an internal server error because 
-            <a href="https://stackoverflow.com/questions/41474150/using-heroku-for-django-media-files">heroku does not support media files.</a>
-            (Thanks to <a href="/blog/authors/datamatin/">datamatin</a> for pointing this out)
-        </div>
+        {% if images_disabled %}
+            <div class="alert alert-warning">
+                Image uploading is currently disabled
+            </div>
+        {% endif %}
         {% for error in form.non_field_errors %}
             <div class="alert alert-danger" role="alert">{{error}}</div>
         {% endfor %}
@@ -32,7 +32,7 @@
         <div class="row mb-3">
             <div class="col">
                 <label id="header-image" class="form-label" for="{{form.header_image.name}}">Header Image</label>
-                <input type="file" class="form-control{%if form.header_image.errors%} is-invalid{%endif%}" name="{{form.header_image.name}}" accept="image/*">
+                <input type="file" class="form-control{%if form.header_image.errors%} is-invalid{%endif%}" name="{{form.header_image.name}}" accept="image/*" {% if images_disabled %}disabled{% endif %}>
                 {% if post and post.get_header_image_file_name %}
                     <div class="form-text">
                         <div class="form-check">
@@ -62,15 +62,20 @@
         </div>
         
         <div class="mb-3">
-            <label id="content" class="form-label" for="{{form.content.name}}">Post Contents</label>
-            <textarea rows="20" class="form-control{%if form.content.errors%} is-invalid{%endif%}" aria-label="With textarea" name="{{form.content.name}}">{% if form.content.value %}{{ form.content.value }}{% endif %}</textarea>
+            <label class="form-label" for="content">Post Contents</label>
+            <textarea id="content" rows="10" class="form-control{%if form.content.errors%} is-invalid{%endif%} markdown-editor" aria-label="With textarea" name="{{form.content.name}}">{% if form.content.value %}{{ form.content.value }}{% endif %}</textarea>
+            <div class="form-text">Format with markdown</div>
             <div class="invalid-feedback">
                 {% for error in form.content.errors %}
                     <div>{{error}}</div>
                 {% endfor %}
             </div>
         </div>
-        <div>
+        
+        <div class="mb-2">
+            <div id="content-preview" class="border p-2"></div>
+        </div>
+        <div class="clearfix">
             <button type="submit" class="btn btn-primary float-end">{% if post %}Save{% else %}Post{% endif %}</button>
         </div>
     </form>

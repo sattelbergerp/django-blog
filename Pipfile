@@ -10,6 +10,7 @@ psycopg2 = "*"
 markdown = "*"
 gunicorn = "*"
 django-heroku = "*"
+bleach = "*"
 
 [dev-packages]
 lorem-text = "*"

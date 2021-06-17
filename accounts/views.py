@@ -3,6 +3,7 @@ from django.shortcuts import redirect, render
 from django.contrib.auth.models import User
 from django.contrib.auth import login
 from .forms import SignupForm
+from django.urls import reverse
 
 # Create your views here.
 
@@ -14,6 +15,8 @@ def signup(request):
             user.save()
             login(request, user)
             redirect = request.POST.get('next', '/')
+            if redirect.split('?')[0] == reverse('signup') or redirect.split('?')[0] == reverse('login'):
+                redirect = '/'
             return HttpResponseRedirect(redirect if redirect != None else '/')
     else:
        form = SignupForm()

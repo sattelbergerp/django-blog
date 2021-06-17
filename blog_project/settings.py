@@ -20,6 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 #Blog specific settings
 TEST_RESOURCES_PATH = path.join(BASE_DIR, 'test_resources')
 AUTHOR_DEFAULT = True
+DISABLE_IMAGE_UPLOADS = True
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
