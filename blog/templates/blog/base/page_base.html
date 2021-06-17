@@ -4,6 +4,7 @@
 {% load notification_tags %}
 {% url 'blog:post_index' as post_index %}
 {% url 'blog:tag_index' as tag_index %}
+{% url 'blog:post_create' as post_create %}
 {% get_unread_notification_count user as unread_notification_count %}
 
 <!DOCTYPE html>
@@ -38,6 +39,13 @@
                         </li>
                     </ul>
                     <ul class="navbar-nav mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            {% if user.is_authenticated and user|can_create:'Post' and user.author.visible %}
+                                <li class="nav-item">
+                                    <a class="nav-link{% if request.path == post_create %} active{% endif %}" href="{% url 'blog:post_create' %}">New post</a>
+                                </li>
+                            {% endif %}
+                        </li>
                         <li class="nav-item dropdown ms-auto">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 {% if user.is_authenticated %}
@@ -49,9 +57,7 @@
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                                 {% if user.is_authenticated %}
-                                    {% if user|can_create:'Post' and user.author.visible %}
-                                        <li><a class="dropdown-item" href="{% url 'blog:post_create' %}">New post</a></li>
-                                    {% endif %}
+                                    
                                     {% if user.author.visible %}
                                         <li><a class="dropdown-item" href="{% url 'blog:author_detail' slug=user.author.slug %}">Blog</a></li>
                                     {% endif %}
